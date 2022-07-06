@@ -15,7 +15,7 @@ import mongoose from "mongoose";
  * const homeObject = home.toObject();
  * ```
  */
-export type Home = {
+export class Home {
 homeId?: string;
 homeName?: string;
 }
@@ -109,7 +109,7 @@ homeName?: string;
  * const deviceObject = device.toObject();
  * ```
  */
-export type Device = {
+export class Device {
 name?: string;
 _id: mongoose.Types.ObjectId;
 home?: DeviceHome;
@@ -220,7 +220,7 @@ homeName?: string;
  * const device2Object = device2.toObject();
  * ```
  */
-export type Device2 = {
+export class Device2 {
 name?: string;
 _id: mongoose.Types.ObjectId;
 home?: Device2Home;
@@ -331,7 +331,7 @@ homeName?: string;
  * const device3Object = device3.toObject();
  * ```
  */
-export type Device3 = {
+export class Device3 {
 name?: string;
 _id: mongoose.Types.ObjectId;
 home?: Device3Home;
@@ -442,7 +442,7 @@ homeName?: string;
  * const device4Object = device4.toObject();
  * ```
  */
-export type Device4 = {
+export class Device4 {
 name?: string;
 _id: mongoose.Types.ObjectId;
 home?: Device4Home;
@@ -553,7 +553,7 @@ homeName?: string;
  * const devicedefaultObject = devicedefault.toObject();
  * ```
  */
-export type DeviceDefault = {
+export class DeviceDefault {
 name?: string;
 _id: mongoose.Types.ObjectId;
 home?: DeviceDefaultHome;

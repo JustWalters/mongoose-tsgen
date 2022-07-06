@@ -1,4 +1,5 @@
 {
+  "root": true,
   "extends": ["oclif", "oclif-typescript"],
   "rules": {
     "quotes": 0,

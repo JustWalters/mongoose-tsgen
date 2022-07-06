@@ -1,4 +1,4 @@
-import { Project, SourceFile, SyntaxKind, PropertySignature } from "ts-morph";
+import { Project, SourceFile, SyntaxKind, PropertySignature, PropertyDeclaration } from "ts-morph";
 import mongoose from "mongoose";
 import * as parser from "./parser";
 import * as templates from "./templates";
@@ -76,18 +76,20 @@ export const replaceModelTypes = (
         ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
         ?.getChildrenOfKind(SyntaxKind.PropertySignature);
 
-      const leanProperties =
+      // TODO: JW - This isn't quite right. Should be PropertyDeclaration[] | PropertySignature[]. But then .find is a problem. IDKY
+      const leanProperties: false | undefined | (PropertyDeclaration | PropertySignature)[] =
         parser.getShouldLeanIncludeVirtuals(schemas[modelName]) &&
-        sourceFile
+        (sourceFile
           ?.getTypeAlias(`${modelName}`)
           ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
-          ?.getChildrenOfKind(SyntaxKind.PropertySignature);
+          ?.getChildrenOfKind(SyntaxKind.PropertySignature) ||
+          sourceFile?.getClass(`${modelName}`)?.getChildrenOfKind(SyntaxKind.PropertyDeclaration));
 
       if (documentProperties || leanProperties) {
         virtualNames.forEach(virtualName => {
           const virtualNameComponents = virtualName.split(".");
           let nestedDocProps: PropertySignature[] | undefined;
-          let nestedLeanProps: PropertySignature[] | undefined;
+          let nestedLeanProps: PropertyDeclaration[] | PropertySignature[] | undefined;
 
           virtualNameComponents.forEach((nameComponent, i) => {
             if (i === virtualNameComponents.length - 1) {
@@ -132,15 +134,20 @@ export const replaceModelTypes = (
         ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
         ?.getChildrenOfKind(SyntaxKind.PropertySignature);
 
-      const leanProperties = sourceFile
-        ?.getTypeAlias(`${modelName}`)
-        ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
-        ?.getChildrenOfKind(SyntaxKind.PropertySignature);
+      const leanProperties =
+        sourceFile
+          ?.getTypeAlias(`${modelName}`)
+          ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
+          ?.getChildrenOfKind(SyntaxKind.PropertySignature) ||
+        sourceFile?.getClass(`${modelName}`)?.getChildrenOfKind(SyntaxKind.PropertyDeclaration);
 
       comments.forEach(({ path, comment }) => {
         const pathComponents = path.split(".");
         let nestedDocProps: PropertySignature[] | undefined;
-        let nestedLeanProps: PropertySignature[] | undefined;
+        // TODO: JW - What's the proper shared type here?
+        let nestedLeanProps:
+          | Pick<PropertySignature, "getName" | "addJsDoc" | "getFirstChildByKind">[]
+          | undefined;
 
         pathComponents.forEach((nameComponent, i) => {
           if (i === pathComponents.length - 1) {
@@ -263,7 +270,7 @@ export const generateTypes = ({
         schema,
         modelName,
         isDocument: false,
-        header: templates.getLeanDocs(modelName) + `\nexport type ${modelName} = {\n`,
+        header: templates.getLeanDocs(modelName) + `\nexport class ${modelName} {\n`,
         footer: "}",
         noMongoose,
         shouldLeanIncludeVirtuals

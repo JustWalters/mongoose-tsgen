@@ -42,21 +42,21 @@ _id: mongoose.Types.ObjectId;
  * const userObject = user.toObject();
  * ```
  */
-export type User = {
+export class User {
 email: string;
 firstName: string;
 /** inline jsdoc */
-lastName: string;
+  lastName: string;
 /**
- * single line jsdoc
- */
-metadata?: any;
+   * single line jsdoc
+   */
+  metadata?: any;
 bestFriend?: User["_id"] | User;
 /**
- * multiline
- * jsdoc
- */
-friends: UserFriend[];
+   * multiline
+   * jsdoc
+   */
+  friends: UserFriend[];
 city: {
 coordinates: number[];
 subdocWithoutDefault?: UserCitySubdocWithoutDefault[];

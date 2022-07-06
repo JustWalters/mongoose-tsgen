@@ -41,7 +41,9 @@ describe("generateTypes", () => {
     generator.overloadQueryPopulate(sourceFile);
 
     cleanupTs?.();
-    expect(sourceFile.getFullText().trim()).toBe(getExpectedString("user.gen.ts").trim());
+    expect(sourceFile.getFullText().trim().replace(/\n\s+/g, `\n `)).toBe(
+      getExpectedString("user.gen.ts").trim().replace(/\n\s+/g, `\n `)
+    );
   });
 
   // TODO: the next 2 tests are kinda random and out of place. First one covers all the latest changes

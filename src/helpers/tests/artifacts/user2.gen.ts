@@ -27,7 +27,7 @@ city: string;
  * const user2Object = user2.toObject();
  * ```
  */
-export type User2 = {
+export class User2 {
 _id: number;
 lastOnlineAt?: Date;
 updatedAt?: Date;
