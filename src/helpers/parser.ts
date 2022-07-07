@@ -511,6 +511,10 @@ export const parseSchema = ({
   return template;
 };
 
+export const getSchemaOptions = (schema: any) => {
+  return _.isEmpty(schema._userProvidedOptions) ? "" : JSON.stringify(schema._userProvidedOptions);
+};
+
 interface LoadedSchemas {
   [modelName: string]: mongoose.Schema;
 }

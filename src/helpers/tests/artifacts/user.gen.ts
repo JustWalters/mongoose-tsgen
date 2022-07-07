@@ -42,7 +42,7 @@ _id: mongoose.Types.ObjectId;
  * const userObject = user.toObject();
  * ```
  */
-@Schema()
+@Schema({"toObject":{"virtuals":true}})
 export class User extends Types.Document {
 @Prop()
 email: string;

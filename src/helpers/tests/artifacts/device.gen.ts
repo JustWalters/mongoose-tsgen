@@ -15,7 +15,7 @@ import mongoose, { Types } from "mongoose";
  * const homeObject = home.toObject();
  * ```
  */
-@Schema()
+@Schema({"_id":false})
 export class Home extends Types.Document {
 @Prop()
 homeId?: string;

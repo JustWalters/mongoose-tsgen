@@ -27,7 +27,7 @@ city: string;
  * const user2Object = user2.toObject();
  * ```
  */
-@Schema()
+@Schema({"timestamps":true})
 export class User2 extends Types.Document {
 _id: number;
 @Prop()

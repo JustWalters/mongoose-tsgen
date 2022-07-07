@@ -274,7 +274,7 @@ export const generateTypes = ({
         header:
           templates.getLeanDocs(modelName) +
           `\n${
-            shouldIncludeDecorators && "@Schema()\n"
+            shouldIncludeDecorators && `@Schema(${parser.getSchemaOptions(schema)})\n`
           }export class ${modelName} extends Types.Document {\n`,
         footer: "}",
         noMongoose,
