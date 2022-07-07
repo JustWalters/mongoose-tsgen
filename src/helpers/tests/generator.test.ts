@@ -26,7 +26,7 @@ describe("generateTypes", () => {
 
   const genFilePath = "mtgen-test.ts";
 
-  test("generate file string success", async () => {
+  test.only("generate file string success", async () => {
     setupFolderStructure("./models", "user", true);
     const modelsPaths = await paths.getModelsPaths("./src/helpers/tests/models/user.ts");
     const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");
@@ -41,8 +41,8 @@ describe("generateTypes", () => {
     generator.overloadQueryPopulate(sourceFile);
 
     cleanupTs?.();
-    expect(sourceFile.getFullText().trim().replace(/\n\s+/g, `\n `)).toBe(
-      getExpectedString("user.gen.ts").trim().replace(/\n\s+/g, `\n `)
+    expect(sourceFile.getFullText().trim().replace(/\n\s+/g, `\n `).replace(/\s+\n/, ` \n`)).toBe(
+      getExpectedString("user.gen.ts").trim().replace(/\n\s+/g, `\n `).replace(/\s+\n/, ` \n`)
     );
   });
 

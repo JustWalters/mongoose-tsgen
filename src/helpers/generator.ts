@@ -273,7 +273,8 @@ export const generateTypes = ({
         header: templates.getLeanDocs(modelName) + `\nexport class ${modelName} {\n`,
         footer: "}",
         noMongoose,
-        shouldLeanIncludeVirtuals
+        shouldLeanIncludeVirtuals,
+        shouldIncludeDecorators: true
       });
 
       writer.write(leanInterfaceStr).blankLine();

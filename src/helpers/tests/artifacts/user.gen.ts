@@ -43,44 +43,71 @@ _id: mongoose.Types.ObjectId;
  * ```
  */
 export class User {
+@Prop()
 email: string;
+@Prop()
 firstName: string;
 /** inline jsdoc */
-  lastName: string;
+ @Prop()
+lastName: string;
 /**
-   * single line jsdoc
-   */
-  metadata?: any;
+ * single line jsdoc
+ */
+ @Prop()
+metadata?: any;
+@Prop()
 bestFriend?: User["_id"] | User;
 /**
-   * multiline
-   * jsdoc
-   */
-  friends: UserFriend[];
+ * multiline
+ * jsdoc
+ */
+ @Prop()
+friends: UserFriend[];
+@Prop()
 city: {
 coordinates: number[];
 subdocWithoutDefault?: UserCitySubdocWithoutDefault[];
 };
+@Prop()
 tags: string[];
+@Prop()
 alternateObjectId?: mongoose.Types.ObjectId;
+@Prop()
 socialMediaHandles?: Map<string, string>;
+@Prop()
 arrayOfMaps: (Map<string, number>)[];
+@Prop()
 mapOfArrays?: Map<string, number[]>;
+@Prop()
 requiredIsFunction?: number;
+@Prop()
 buffer: Buffer;
+@Prop()
 bufferString?: Buffer;
+@Prop()
 bufferSchemaType?: Buffer;
+@Prop()
 decimal128?: number;
+@Prop()
 otherDecimal128?: number;
+@Prop()
 numberString?: number;
+@Prop()
 stringString?: string;
+@Prop()
 booleanString?: boolean;
+@Prop()
 dateString?: Date;
+@Prop()
 otherNumberString: number;
+@Prop()
 otherStringString: string;
+@Prop()
 enumWithNull?: "a" | "b" | "c" | null;
+@Prop()
 enumWithoutNull?: "a" | "b" | "c";
 _id: mongoose.Types.ObjectId;
+@Prop()
 name: string;
 }
 

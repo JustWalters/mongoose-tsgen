@@ -20,15 +20,22 @@ const formatKeyEntry = ({
   key,
   val,
   isOptional = false,
-  newline = true
+  newline = true,
+  includeDecorator = false
 }: {
   key: string;
   val: string;
   isOptional?: boolean;
   newline?: boolean;
+  includeDecorator?: boolean;
 }) => {
   let line = "";
 
+  if (includeDecorator) {
+    if (key !== "_id") {
+      line += `@Prop()\n`;
+    }
+  }
   if (key) {
     line += key;
     if (isOptional) line += "?";
@@ -289,7 +296,8 @@ const parseChildSchemas = ({
 export const getParseKeyFn = (
   isDocument: boolean,
   shouldLeanIncludeVirtuals: boolean,
-  noMongoose: boolean
+  noMongoose: boolean,
+  includeDecorators = false
 ) => {
   return (key: string, valOriginal: any): string => {
     // if the value is an object, we need to deepClone it to ensure changes to `val` aren't persisted in parent function
@@ -452,7 +460,7 @@ export const getParseKeyFn = (
     if (isMap && isMapOfArray)
       valType = isDocument ? `mongoose.Types.Map<${valType}>` : `Map<string, ${valType}>`;
 
-    return formatKeyEntry({ key, val: valType, isOptional });
+    return formatKeyEntry({ key, val: valType, isOptional, includeDecorator: includeDecorators });
   };
 };
 
@@ -463,7 +471,8 @@ export const parseSchema = ({
   header = "",
   footer = "",
   noMongoose = false,
-  shouldLeanIncludeVirtuals
+  shouldLeanIncludeVirtuals,
+  shouldIncludeDecorators = false
 }: {
   schema: any;
   modelName?: string;
@@ -472,6 +481,7 @@ export const parseSchema = ({
   footer?: string;
   noMongoose?: boolean;
   shouldLeanIncludeVirtuals: boolean;
+  shouldIncludeDecorators?: boolean;
 }) => {
   let template = "";
   const schema = _.cloneDeep(schemaOriginal);
@@ -484,7 +494,12 @@ export const parseSchema = ({
 
   const schemaTree = schema.tree;
 
-  const parseKey = getParseKeyFn(isDocument, shouldLeanIncludeVirtuals, noMongoose);
+  const parseKey = getParseKeyFn(
+    isDocument,
+    shouldLeanIncludeVirtuals,
+    noMongoose,
+    shouldIncludeDecorators
+  );
 
   Object.keys(schemaTree).forEach((key: string) => {
     const val = schemaTree[key];
