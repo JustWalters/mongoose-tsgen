@@ -5,7 +5,7 @@
 
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 /**
  * Lean version of User2AddressDocument
@@ -27,11 +27,16 @@ city: string;
  * const user2Object = user2.toObject();
  * ```
  */
-export class User2 {
+@Schema()
+export class User2 extends Types.Document {
 _id: number;
+@Prop()
 lastOnlineAt?: Date;
+@Prop()
 updatedAt?: Date;
+@Prop()
 createdAt?: Date;
+@Prop()
 address: User2Address;
 }
 

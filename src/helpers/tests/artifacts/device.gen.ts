@@ -5,7 +5,7 @@
 
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 /**
  * Lean version of HomeDocument
@@ -15,8 +15,11 @@ import mongoose from "mongoose";
  * const homeObject = home.toObject();
  * ```
  */
-export class Home {
+@Schema()
+export class Home extends Types.Document {
+@Prop()
 homeId?: string;
+@Prop()
 homeName?: string;
 }
 
@@ -109,9 +112,12 @@ homeName?: string;
  * const deviceObject = device.toObject();
  * ```
  */
-export class Device {
+@Schema()
+export class Device extends Types.Document {
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop()
 home?: DeviceHome;
 }
 
@@ -220,9 +226,12 @@ homeName?: string;
  * const device2Object = device2.toObject();
  * ```
  */
-export class Device2 {
+@Schema()
+export class Device2 extends Types.Document {
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop()
 home?: Device2Home;
 }
 
@@ -331,9 +340,12 @@ homeName?: string;
  * const device3Object = device3.toObject();
  * ```
  */
-export class Device3 {
+@Schema()
+export class Device3 extends Types.Document {
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop()
 home?: Device3Home;
 }
 
@@ -442,9 +454,12 @@ homeName?: string;
  * const device4Object = device4.toObject();
  * ```
  */
-export class Device4 {
+@Schema()
+export class Device4 extends Types.Document {
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop()
 home?: Device4Home;
 }
 
@@ -553,9 +568,12 @@ homeName?: string;
  * const devicedefaultObject = devicedefault.toObject();
  * ```
  */
-export class DeviceDefault {
+@Schema()
+export class DeviceDefault extends Types.Document {
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop()
 home?: DeviceDefaultHome;
 }
 

@@ -248,6 +248,7 @@ export const generateTypes = ({
   imports?: string[];
   noMongoose?: boolean;
 }) => {
+  const shouldIncludeDecorators = true;
   sourceFile.addStatements(writer => {
     writer.write(templates.MAIN_HEADER).blankLine();
     // mongoose import
@@ -270,11 +271,15 @@ export const generateTypes = ({
         schema,
         modelName,
         isDocument: false,
-        header: templates.getLeanDocs(modelName) + `\nexport class ${modelName} {\n`,
+        header:
+          templates.getLeanDocs(modelName) +
+          `\n${
+            shouldIncludeDecorators && "@Schema()\n"
+          }export class ${modelName} extends Types.Document {\n`,
         footer: "}",
         noMongoose,
         shouldLeanIncludeVirtuals,
-        shouldIncludeDecorators: true
+        shouldIncludeDecorators
       });
 
       writer.write(leanInterfaceStr).blankLine();

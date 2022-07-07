@@ -5,7 +5,7 @@
 
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 /**
  * Lean version of UserFriendDocument
@@ -42,7 +42,8 @@ _id: mongoose.Types.ObjectId;
  * const userObject = user.toObject();
  * ```
  */
-export class User {
+@Schema()
+export class User extends Types.Document {
 @Prop()
 email: string;
 @Prop()
