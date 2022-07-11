@@ -44,72 +44,71 @@ _id: mongoose.Types.ObjectId;
  */
 @Schema({"toObject":{"virtuals":true}})
 export class User extends Types.Document {
-@Prop()
+@Prop({"required":true,"type":String})
 email: string;
-@Prop()
+@Prop({"required":true,"type":String})
 firstName: string;
 /** inline jsdoc */
- @Prop()
+ @Prop({"required":true,"type":String})
 lastName: string;
 /**
  * single line jsdoc
  */
- @Prop()
+ @Prop({"type":mongoose.Types.Mixed})
 metadata?: any;
-@Prop()
+@Prop({"ref":"User","type":mongoose.Types.ObjectId})
 bestFriend?: User["_id"] | User;
 /**
  * multiline
  * jsdoc
  */
- @Prop()
+ @Prop({"type":[UserFriendSchema],"required":true})
 friends: UserFriend[];
-@Prop()
+@Prop({"type":"{\ncoordinates: Number[];\nsubdocWithoutDefault?: UserCitySubdocWithoutDefault[];\n}","required":true})
 city: {
 coordinates: number[];
 subdocWithoutDefault?: UserCitySubdocWithoutDefault[];
 };
-@Prop()
+@Prop({"type":[String],"required":true})
 tags: string[];
-@Prop()
+@Prop({"type":mongoose.Types.ObjectId})
 alternateObjectId?: mongoose.Types.ObjectId;
-@Prop()
+@Prop({"type":mongoose.Types.Map<String>})
 socialMediaHandles?: Map<string, string>;
-@Prop()
+@Prop({"type":[mongoose.Types.Map<Number>],"required":true})
 arrayOfMaps: (Map<string, number>)[];
-@Prop()
+@Prop({"type":mongoose.Types.Map<[Number]>})
 mapOfArrays?: Map<string, number[]>;
-@Prop()
+@Prop({"required":"JustinTODO","type":Number})
 requiredIsFunction?: number;
-@Prop()
+@Prop({"required":true,"type":Buffer})
 buffer: Buffer;
-@Prop()
+@Prop({"type":Buffer})
 bufferString?: Buffer;
-@Prop()
+@Prop({"default":null,"type":Buffer})
 bufferSchemaType?: Buffer;
-@Prop()
+@Prop({"type":Number})
 decimal128?: number;
-@Prop()
+@Prop({"type":Number})
 otherDecimal128?: number;
-@Prop()
+@Prop({"type":Number})
 numberString?: number;
-@Prop()
+@Prop({"type":String})
 stringString?: string;
-@Prop()
+@Prop({"type":Boolean})
 booleanString?: boolean;
-@Prop()
+@Prop({"type":Date})
 dateString?: Date;
-@Prop()
+@Prop({"required":true,"type":Number})
 otherNumberString: number;
-@Prop()
+@Prop({"required":true,"type":String})
 otherStringString: string;
-@Prop()
+@Prop({"type":String,"enum":["a", "b", "c", null]})
 enumWithNull?: "a" | "b" | "c" | null;
-@Prop()
+@Prop({"type":String,"enum":["a", "b", "c"]})
 enumWithoutNull?: "a" | "b" | "c";
 _id: mongoose.Types.ObjectId;
-@Prop()
-name: string;
+ name: string;
 }
 
 /**

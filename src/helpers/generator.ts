@@ -103,7 +103,14 @@ export const replaceModelTypes = (
                 const leanPropMatch = (nestedLeanProps ?? leanProperties).find(
                   prop => prop.getName() === nameComponent
                 );
+
                 leanPropMatch?.setType(virtuals[virtualName]);
+                if (leanPropMatch?.getKind() === SyntaxKind.PropertyDeclaration) {
+                  const propertyDeclaration = leanPropMatch as PropertyDeclaration;
+                  propertyDeclaration.getDecorators().forEach(decorator => {
+                    decorator.remove();
+                  });
+                }
               }
 
               return;

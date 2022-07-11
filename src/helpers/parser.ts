@@ -20,22 +20,15 @@ const formatKeyEntry = ({
   key,
   val,
   isOptional = false,
-  newline = true,
-  includeDecorator = false
+  newline = true
 }: {
   key: string;
   val: string;
   isOptional?: boolean;
   newline?: boolean;
-  includeDecorator?: boolean;
 }) => {
   let line = "";
 
-  if (includeDecorator) {
-    if (key !== "_id") {
-      line += `@Prop()\n`;
-    }
-  }
   if (key) {
     line += key;
     if (isOptional) line += "?";
@@ -293,6 +286,88 @@ const parseChildSchemas = ({
   return childInterfaces;
 };
 
+const formatPropOptions = (options: object) => {
+  if (_.isEmpty(options)) return "";
+
+  return (
+    JSON.stringify(options, (key, value) => {
+      if (typeof value === "function") {
+        return "JustinTODO";
+      }
+      if (value instanceof RegExp) {
+        return "JustinTODO";
+      }
+      return value;
+    })
+      .replace(/"Map<string, ([A-Za-z_[\]]+)>"/, "mongoose.Types.Map<$1>")
+      .replace(/Map<string, ([A-Za-z_]+)>/, "mongoose.Types.Map<$1>")
+      .replace('"type":"MongooseSchema.Types.ObjectId"', '"type":mongoose.Types.ObjectId')
+      .replace('"type":"mongoose.Types.ObjectId"', '"type":mongoose.Types.ObjectId')
+      .replace(/"type":"mongoose.Types.Array<([A-Za-z_]+)>"/, '"type":[$1]')
+      .replace('"type":"any"', '"type":mongoose.Types.Mixed')
+      .replace(/<\(?([a-zA-Z_.<>]+)\)?\[\]>/, "<[$1]>") // For Maps
+      .replace(/"type":"\(?([a-zA-Z_.<>]+)\)?\[\]"/, '"type":[$1]')
+      .replace(/"type":"([a-zA-Z_]+)"/, (match, valType) => {
+        return `"type":${valType}`;
+      })
+      .replace(/"type":\[([a-zA-Z_]+)\]/, (match, valType) => {
+        const subSchema = BASE_TYPES.map(String)
+          .map(t => t.toLowerCase())
+          .includes(valType.toLowerCase()) ?
+          valType :
+          `${valType}Schema`;
+        return `"type":[${subSchema}]`;
+      })
+      .replace(/"type":"mongoose.Types.DocumentArray<(.+)>"/, '"type":[$1]')
+      .replace(/"type":"(.+ \| .+)"/g, (match, valType) => {
+        const isAPopulatableField = match.includes('[\\"_id\\"]');
+        if (isAPopulatableField) return '"type":mongoose.Types.ObjectId';
+
+        return `"type":String,"enum":[${valType.replace(/ \|/g, ",")}]`.replace(/\\"/g, '"');
+      })
+      // The below types omit "type:" to allow for arrays
+      .replace("string", "String")
+      .replace("number", "Number")
+      .replace("boolean", "Boolean")
+  );
+};
+
+const formatDecorator = ({
+  nestDecorators,
+  key,
+  valType,
+  options,
+  isOptional = false
+}: {
+  nestDecorators: boolean;
+  key: string;
+  valType: string;
+  options?: any;
+  isOptional?: boolean;
+}): string => {
+  if (!nestDecorators) return "";
+
+  if (key === "_id") return "";
+
+  const propOptions: any = _.pick(options, [
+    "default",
+    "required",
+    "ref",
+    "trim",
+    "lowercase",
+    "unique",
+    "validate",
+    "match"
+  ]);
+  propOptions.type = valType;
+
+  if (!isOptional && propOptions.required === undefined) {
+    propOptions.required = true;
+  }
+
+  return `@Prop(${formatPropOptions(propOptions)})\n`;
+};
+
 export const getParseKeyFn = (
   isDocument: boolean,
   shouldLeanIncludeVirtuals: boolean,
@@ -460,7 +535,15 @@ export const getParseKeyFn = (
     if (isMap && isMapOfArray)
       valType = isDocument ? `mongoose.Types.Map<${valType}>` : `Map<string, ${valType}>`;
 
-    return formatKeyEntry({ key, val: valType, isOptional, includeDecorator: includeDecorators });
+    const propDecorator = formatDecorator({
+      nestDecorators: includeDecorators,
+      key,
+      valType,
+      isOptional,
+      options: val
+    });
+
+    return propDecorator + formatKeyEntry({ key, val: valType, isOptional });
   };
 };
 
