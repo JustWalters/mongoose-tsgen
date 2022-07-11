@@ -6,7 +6,8 @@ import {
   SourceFile,
   VariableDeclaration,
   ExportAssignment,
-  ObjectLiteralExpression
+  ObjectLiteralExpression,
+  NewExpression
 } from "ts-morph";
 import glob from "glob";
 import path from "path";
@@ -94,6 +95,54 @@ function findCommentsInFile(
   }
 
   // TODO: get virtual comments
+
+  return modelTypes;
+}
+
+function isSchemaConstructor(expression?: NewExpression): expression is NewExpression {
+  if (!expression) return false;
+
+  if (expression.getExpression().getText().includes("Schema")) {
+    return true;
+  }
+
+  return false;
+}
+
+function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
+  const schemaModelMapping: {
+    [schemaVariableName: string]: string;
+  } = {};
+
+  Object.keys(modelTypes).forEach((modelName: string) => {
+    const { schemaVariableName } = modelTypes[modelName];
+    if (schemaVariableName) schemaModelMapping[schemaVariableName] = modelName;
+  });
+
+  for (const statement of sourceFile.getStatements()) {
+    if (!Node.isVariableStatement(statement)) continue;
+    const potentialNewExpression = statement
+      .getDeclarationList()
+      .getDeclarations()[0]
+      .getInitializerIfKind(SyntaxKind.NewExpression);
+    if (!isSchemaConstructor(potentialNewExpression)) continue;
+
+    const schemaDefinition = potentialNewExpression.getArguments()[0];
+    if (!Node.isObjectLiteralExpression(schemaDefinition)) continue;
+
+    const schemaVariableName = statement.getDeclarationList().getDeclarations()[0].getName();
+    const modelName = schemaModelMapping[schemaVariableName];
+
+    const properties = (schemaDefinition as ObjectLiteralExpression).getProperties();
+
+    properties.forEach(property => {
+      if (Node.isPropertyAssignment(property) || Node.isShorthandPropertyAssignment(property)) {
+        modelTypes[modelName].properties[property.getName()] = property.getInitializer();
+      } else {
+        console.log("UNKNOWN Property Type", property.getText());
+      }
+    });
+  }
 
   return modelTypes;
 }
@@ -302,6 +351,7 @@ function initModelTypes(sourceFile: SourceFile, filePath: string) {
       schemaVariableName,
       modelVariableName,
       filePath,
+      properties: {},
       methods: {},
       statics: {},
       query: {},
@@ -317,6 +367,7 @@ function initModelTypes(sourceFile: SourceFile, filePath: string) {
       modelTypes[defaultModelInit.modelName] = {
         schemaVariableName: defaultModelInit.schemaVariableName,
         filePath,
+        properties: {},
         methods: {},
         statics: {},
         query: {},
@@ -350,6 +401,7 @@ export const getModelTypes = (modelsPaths: string[], maxCommentDepth = 2): Model
     const sourceFile = project.getSourceFileOrThrow(modelPath);
     let modelTypes = initModelTypes(sourceFile, modelPath);
 
+    modelTypes = findPropertiesInFile(sourceFile, modelTypes);
     modelTypes = findTypesInFile(sourceFile, modelTypes);
     modelTypes = findCommentsInFile(sourceFile, modelTypes, maxCommentDepth);
 
@@ -358,7 +410,7 @@ export const getModelTypes = (modelsPaths: string[], maxCommentDepth = 2): Model
       ...modelTypes
     };
   });
-
+  // console.log('ALL MODEL TYPES', allModelTypes);
   return allModelTypes;
 };
 

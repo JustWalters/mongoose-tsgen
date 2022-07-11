@@ -81,7 +81,10 @@ socialMediaHandles?: Map<string, string>;
 arrayOfMaps: (Map<string, number>)[];
 @Prop({"type":mongoose.Types.Map<[Number]>})
 mapOfArrays?: Map<string, number[]>;
-@Prop({"required":"JustinTODO","type":Number})
+@Prop({"required":function (this: UserDocument) {
+  // This is irrelevant, we're just testing that setting `required: function() {...}` leaves the field "optional" in the generated typescript.
+  return !!this.alternateObjectId
+ },"type":Number})
 requiredIsFunction?: number;
 @Prop({"required":true,"type":Buffer})
 buffer: Buffer;

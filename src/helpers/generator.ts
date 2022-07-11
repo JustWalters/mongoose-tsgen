@@ -1,4 +1,11 @@
-import { Project, SourceFile, SyntaxKind, PropertySignature, PropertyDeclaration } from "ts-morph";
+import {
+  Node,
+  Project,
+  SourceFile,
+  SyntaxKind,
+  PropertySignature,
+  PropertyDeclaration
+} from "ts-morph";
 import mongoose from "mongoose";
 import * as parser from "./parser";
 import * as templates from "./templates";
@@ -20,7 +27,46 @@ export const replaceModelTypes = (
   }
 ) => {
   Object.entries(modelTypes).forEach(([modelName, types]) => {
-    const { methods, statics, query, virtuals, comments } = types;
+    const { properties, methods, statics, query, virtuals, comments } = types;
+
+    // properties
+    if (properties && Object.keys(properties).length > 0) {
+      sourceFile
+        ?.getClass(modelName)
+        ?.getChildrenOfKind(SyntaxKind.PropertyDeclaration)
+        .forEach(prop => {
+          const decoratorArg = prop.getDecorator("Prop")?.getArguments()[0];
+          if (decoratorArg && decoratorArg.getText().includes("JustinTODO")) {
+            if (Node.isObjectLiteralExpression(decoratorArg)) {
+              decoratorArg.getProperties().forEach(property => {
+                if (
+                  Node.isPropertyAssignment(property) ||
+                  Node.isShorthandPropertyAssignment(property)
+                ) {
+                  const propertyName = property.getName();
+                  const propertyValue = property.getInitializer()?.getText();
+
+                  if (propertyValue?.includes("JustinTODO")) {
+                    const newType = properties[prop.getName()];
+
+                    if (Node.isObjectLiteralExpression(newType)) {
+                      const propertyFromSource = newType.getProperty(propertyName.slice(1, -1));
+                      if (
+                        Node.isPropertyAssignment(propertyFromSource) ||
+                        Node.isShorthandPropertyAssignment(propertyFromSource)
+                      ) {
+                        const newInitializer = propertyFromSource.getInitializer();
+
+                        property.setInitializer(newInitializer?.getText() || "");
+                      }
+                    }
+                  }
+                }
+              });
+            }
+          }
+        });
+    }
 
     // methods
     if (Object.keys(methods).length > 0) {

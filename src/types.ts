@@ -1,8 +1,12 @@
+import { Expression } from "ts-morph";
+
 /**
  * Contains information parsed from ts-morph about various types for each model
  */
 export type ModelTypes = {
   [modelName: string]: {
+    /** mongoose property types */
+    properties: { [propertyName: string]: Expression | undefined };
     /** mongoose method function types */
     methods: { [funcName: string]: string };
     /** mongoose static function types */

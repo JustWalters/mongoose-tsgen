@@ -18,7 +18,7 @@ function cleanupModelsInMemory() {
 
 // these tests are more integration tests than unit - should split them out
 
-describe("generateTypes", () => {
+describe.only("generateTypes", () => {
   beforeAll(cleanup);
 
   afterEach(cleanup);
@@ -26,7 +26,7 @@ describe("generateTypes", () => {
 
   const genFilePath = "mtgen-test.ts";
 
-  test("generate file string success", async () => {
+  test.only("generate file string success", async () => {
     setupFolderStructure("./models", "user", true);
     const modelsPaths = await paths.getModelsPaths("./src/helpers/tests/models/user.ts");
     const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");
