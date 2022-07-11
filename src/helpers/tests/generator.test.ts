@@ -26,7 +26,7 @@ describe("generateTypes", () => {
 
   const genFilePath = "mtgen-test.ts";
 
-  test.only("generate file string success", async () => {
+  test("generate file string success", async () => {
     setupFolderStructure("./models", "user", true);
     const modelsPaths = await paths.getModelsPaths("./src/helpers/tests/models/user.ts");
     const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");

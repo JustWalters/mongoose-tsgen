@@ -5,7 +5,10 @@
 
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
+
+import { Prop, Schema } from '@nestjs/mongoose';
+import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
 
 /**
  * Lean version of User2AddressDocument
@@ -28,17 +31,19 @@ city: string;
  * ```
  */
 @Schema({"timestamps":true})
-export class User2 extends Types.Document {
+export class User2 extends mongoose.Types.Document {
 _id: number;
-@Prop()
+@Prop({"type":Date})
 lastOnlineAt?: Date;
-@Prop()
+@Prop({"type":Date})
 updatedAt?: Date;
-@Prop()
+@Prop({"type":Date})
 createdAt?: Date;
-@Prop()
+@Prop({"required":true,"type":User2AddressSchema})
 address: User2Address;
 }
+
+export const User2Schema = SchemaFactory.createForClass(User2);
 
 /**
  * Lean version of User2Document (type alias of `User2`)

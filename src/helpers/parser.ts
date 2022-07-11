@@ -305,12 +305,18 @@ const formatPropOptions = (options: object) => {
       .replace('"type":"mongoose.Types.ObjectId"', '"type":mongoose.Types.ObjectId')
       .replace(/"type":"mongoose.Types.Array<([A-Za-z_]+)>"/, '"type":[$1]')
       .replace('"type":"any"', '"type":mongoose.Types.Mixed')
-      .replace(/<\(?([a-zA-Z_.<>]+)\)?\[\]>/, "<[$1]>") // For Maps
-      .replace(/"type":"\(?([a-zA-Z_.<>]+)\)?\[\]"/, '"type":[$1]')
-      .replace(/"type":"([a-zA-Z_]+)"/, (match, valType) => {
-        return `"type":${valType}`;
+      .replace(/<\(?([a-zA-Z0-9_.<>]+)\)?\[\]>/, "<[$1]>") // For Maps
+      .replace(/"type":"\(?([a-zA-Z0-9_.<>]+)\)?\[\]"/, '"type":[$1]')
+      .replace(/"type":"(\w+)"/, (match, valType) => {
+        // TODO: Reuse this Schema suffix adder
+        const subSchema = BASE_TYPES.map(String)
+          .map(t => t.toLowerCase())
+          .includes(valType.toLowerCase()) ?
+          valType :
+          `${valType}Schema`;
+        return `"type":${subSchema}`;
       })
-      .replace(/"type":\[([a-zA-Z_]+)\]/, (match, valType) => {
+      .replace(/"type":\[(\w+)\]/, (match, valType) => {
         const subSchema = BASE_TYPES.map(String)
           .map(t => t.toLowerCase())
           .includes(valType.toLowerCase()) ?

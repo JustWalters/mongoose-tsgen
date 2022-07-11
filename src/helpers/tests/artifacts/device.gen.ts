@@ -5,7 +5,10 @@
 
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
+
+import { Prop, Schema } from '@nestjs/mongoose';
+import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
 
 /**
  * Lean version of HomeDocument
@@ -16,12 +19,14 @@ import mongoose, { Types } from "mongoose";
  * ```
  */
 @Schema({"_id":false})
-export class Home extends Types.Document {
-@Prop()
+export class Home extends mongoose.Types.Document {
+@Prop({"type":String})
 homeId?: string;
-@Prop()
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const HomeSchema = SchemaFactory.createForClass(Home);
 
 /**
  * Lean version of HomeDocument (type alias of `Home`)
@@ -113,13 +118,15 @@ homeName?: string;
  * ```
  */
 @Schema()
-export class Device extends Types.Document {
-@Prop()
+export class Device extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
-@Prop()
+@Prop({"type":DeviceHomeSchema})
 home?: DeviceHome;
 }
+
+export const DeviceSchema = SchemaFactory.createForClass(Device);
 
 /**
  * Lean version of DeviceDocument (type alias of `Device`)
@@ -227,13 +234,15 @@ homeName?: string;
  * ```
  */
 @Schema()
-export class Device2 extends Types.Document {
-@Prop()
+export class Device2 extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
-@Prop()
+@Prop({"type":Device2HomeSchema})
 home?: Device2Home;
 }
+
+export const Device2Schema = SchemaFactory.createForClass(Device2);
 
 /**
  * Lean version of Device2Document (type alias of `Device2`)
@@ -341,13 +350,15 @@ homeName?: string;
  * ```
  */
 @Schema()
-export class Device3 extends Types.Document {
-@Prop()
+export class Device3 extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
-@Prop()
+@Prop({"type":Device3HomeSchema})
 home?: Device3Home;
 }
+
+export const Device3Schema = SchemaFactory.createForClass(Device3);
 
 /**
  * Lean version of Device3Document (type alias of `Device3`)
@@ -455,13 +466,15 @@ homeName?: string;
  * ```
  */
 @Schema()
-export class Device4 extends Types.Document {
-@Prop()
+export class Device4 extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
-@Prop()
+@Prop({"type":Device4HomeSchema})
 home?: Device4Home;
 }
+
+export const Device4Schema = SchemaFactory.createForClass(Device4);
 
 /**
  * Lean version of Device4Document (type alias of `Device4`)
@@ -569,13 +582,15 @@ homeName?: string;
  * ```
  */
 @Schema()
-export class DeviceDefault extends Types.Document {
-@Prop()
+export class DeviceDefault extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
-@Prop()
+@Prop({"type":DeviceDefaultHomeSchema})
 home?: DeviceDefaultHome;
 }
+
+export const DeviceDefaultSchema = SchemaFactory.createForClass(DeviceDefault);
 
 /**
  * Lean version of DeviceDefaultDocument (type alias of `DeviceDefault`)
