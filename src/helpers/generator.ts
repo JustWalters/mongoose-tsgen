@@ -260,6 +260,7 @@ export const generateTypes = ({
     writer.write(templates.MAIN_HEADER).blankLine();
     // mongoose import
     if (!noMongoose) writer.write(templates.MONGOOSE_IMPORT);
+    if (shouldIncludeDecorators) writer.blankLine().write(templates.NEST_JS_IMPORT);
 
     // custom, user-defined imports
     if (imports.length > 0) writer.write(imports.join("\n"));
@@ -282,8 +283,11 @@ export const generateTypes = ({
           templates.getLeanDocs(modelName) +
           `\n${
             shouldIncludeDecorators && `@Schema(${parser.getSchemaOptions(schema)})\n`
-          }export class ${modelName} extends Types.Document {\n`,
-        footer: "}",
+          }export class ${modelName} extends mongoose.Types.Document {\n`,
+        footer: `}${
+          shouldIncludeDecorators &&
+          `\n\nexport const ${modelName}Schema = SchemaFactory.createForClass(${modelName});\n`
+        }`,
         noMongoose,
         shouldLeanIncludeVirtuals,
         shouldIncludeDecorators

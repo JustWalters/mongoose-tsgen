@@ -5,7 +5,9 @@
 
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
+ import { Prop, Schema } from '@nestjs/mongoose';
+import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
 
 /**
  * Lean version of UserFriendDocument
@@ -43,7 +45,7 @@ _id: mongoose.Types.ObjectId;
  * ```
  */
 @Schema({"toObject":{"virtuals":true}})
-export class User extends Types.Document {
+export class User extends mongoose.Types.Document {
 @Prop({"required":true,"type":String})
 email: string;
 @Prop({"required":true,"type":String})
@@ -110,6 +112,8 @@ enumWithoutNull?: "a" | "b" | "c";
 _id: mongoose.Types.ObjectId;
  name: string;
 }
+
+export const UserSchema = SchemaFactory.createForClass(User);
 
 /**
  * Lean version of UserDocument (type alias of `User`)
