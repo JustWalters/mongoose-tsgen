@@ -134,6 +134,8 @@ function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
     const modelName = schemaModelMapping[schemaVariableName];
 
     const properties = (schemaDefinition as ObjectLiteralExpression).getProperties();
+    // modelName is probably the name of a subschema
+    if (!modelTypes[modelName]) continue;
 
     properties.forEach(property => {
       if (Node.isPropertyAssignment(property) || Node.isShorthandPropertyAssignment(property)) {

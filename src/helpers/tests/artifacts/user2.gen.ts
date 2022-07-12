@@ -18,9 +18,13 @@ import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
  * const user2Object = user2.toObject();
  * ```
  */
-export type User2Address = {
+@Schema({"_id":false})
+export class User2Address extends mongoose.Types.Subdocument {
+@Prop({"required":true,"type":String})
 city: string;
 }
+
+export const User2AddressSchema = SchemaFactory.createForClass(User2Address);
 
 /**
  * Lean version of User2Document

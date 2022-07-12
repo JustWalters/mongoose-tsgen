@@ -16,6 +16,10 @@ export const getShouldLeanIncludeVirtuals = (schema: any) => {
   return true;
 };
 
+export const getSchemaOptions = (schema: any) => {
+  return _.isEmpty(schema._userProvidedOptions) ? "" : JSON.stringify(schema._userProvidedOptions);
+};
+
 const formatKeyEntry = ({
   key,
   val,
@@ -189,12 +193,14 @@ const parseChildSchemas = ({
   schema,
   isDocument,
   noMongoose,
-  modelName
+  modelName,
+  shouldIncludeDecorators
 }: {
   schema: any;
   isDocument: boolean;
   noMongoose: boolean;
   modelName: string;
+  shouldIncludeDecorators: boolean;
 }) => {
   const flatSchemaTree: any = flatten(schema.tree, { safe: true });
   let childInterfaces = "";
@@ -240,41 +246,62 @@ const parseChildSchemas = ({
           templates.getDocumentDocs(rootPath);
       else header += templates.getLeanDocs(rootPath, name);
 
-      header += "\nexport ";
+      if (shouldIncludeDecorators) {
+        header += `\n@Schema(${getSchemaOptions(child.schema)})`;
+        header += `\nexport class ${name} extends mongoose.Types.Subdocument {\n`;
 
-      if (isDocument) {
-        header += `type ${name}Document = `;
-        if (isSubdocArray) {
-          header += "mongoose.Types.Subdocument";
-        }
-        // not sure why schema doesnt have `tree` property for typings
-        else {
-          let _idType;
-          // get type of _id to pass to mongoose.Document
-          // this is likely unecessary, since non-subdocs are not allowed to have option _id: false (https://mongoosejs.com/docs/guide.html#_id)
-          if ((schema as any).tree._id)
-            _idType = convertBaseTypeToTs("_id", (schema as any).tree._id, true, noMongoose);
+        // TODO: this should not circularly call parseSchema
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        childInterfaces += parseSchema({
+          schema: child.schema,
+          modelName: name,
+          header,
+          isDocument,
+          footer: `}${
+            shouldIncludeDecorators &&
+            `\n\nexport const ${name}Schema = SchemaFactory.createForClass(${name});`
+          }\n\n`,
+          noMongoose,
+          shouldLeanIncludeVirtuals: getShouldLeanIncludeVirtuals(child.schema),
+          shouldIncludeDecorators: true
+        });
+      } else {
+        header += "\nexport ";
 
-          // TODO: this should extend `${name}Methods` like normal docs, but generator will only have methods, statics, etc. under the model name, not the subdoc model name
-          // so after this is generated, we should do a pass and see if there are any child schemas that have non-subdoc definitions.
-          // or could just wait until we dont need duplicate subdoc versions of docs (use the same one for both embedded doc and non-subdoc)
-          header += `mongoose.Document<${_idType ?? "never"}>`;
-        }
+        if (isDocument) {
+          header += `type ${name}Document = `;
+          if (isSubdocArray) {
+            header += "mongoose.Types.Subdocument";
+          }
+          // not sure why schema doesnt have `tree` property for typings
+          else {
+            let _idType;
+            // get type of _id to pass to mongoose.Document
+            // this is likely unecessary, since non-subdocs are not allowed to have option _id: false (https://mongoosejs.com/docs/guide.html#_id)
+            if ((schema as any).tree._id)
+              _idType = convertBaseTypeToTs("_id", (schema as any).tree._id, true, noMongoose);
 
-        header += " & {\n";
-      } else header += `type ${name} = {\n`;
+            // TODO: this should extend `${name}Methods` like normal docs, but generator will only have methods, statics, etc. under the model name, not the subdoc model name
+            // so after this is generated, we should do a pass and see if there are any child schemas that have non-subdoc definitions.
+            // or could just wait until we dont need duplicate subdoc versions of docs (use the same one for both embedded doc and non-subdoc)
+            header += `mongoose.Document<${_idType ?? "never"}>`;
+          }
 
-      // TODO: this should not circularly call parseSchema
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      childInterfaces += parseSchema({
-        schema: child.schema,
-        modelName: name,
-        header,
-        isDocument,
-        footer: `}\n\n`,
-        noMongoose,
-        shouldLeanIncludeVirtuals: getShouldLeanIncludeVirtuals(child.schema)
-      });
+          header += " & {\n";
+        } else header += `type ${name} = {\n`;
+
+        // TODO: this should not circularly call parseSchema
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        childInterfaces += parseSchema({
+          schema: child.schema,
+          modelName: name,
+          header,
+          isDocument,
+          footer: `}\n\n`,
+          noMongoose,
+          shouldLeanIncludeVirtuals: getShouldLeanIncludeVirtuals(child.schema)
+        });
+      }
     };
   };
 
@@ -338,7 +365,7 @@ const formatPropOptions = (options: object) => {
   );
 };
 
-const formatDecorator = ({
+const formatPropDecorator = ({
   nestDecorators,
   key,
   valType,
@@ -541,7 +568,7 @@ export const getParseKeyFn = (
     if (isMap && isMapOfArray)
       valType = isDocument ? `mongoose.Types.Map<${valType}>` : `Map<string, ${valType}>`;
 
-    const propDecorator = formatDecorator({
+    const propDecorator = formatPropDecorator({
       nestDecorators: includeDecorators,
       key,
       valType,
@@ -576,7 +603,13 @@ export const parseSchema = ({
   const schema = _.cloneDeep(schemaOriginal);
 
   if (schema.childSchemas?.length > 0 && modelName) {
-    template += parseChildSchemas({ schema, isDocument, noMongoose, modelName });
+    template += parseChildSchemas({
+      schema,
+      isDocument,
+      noMongoose,
+      modelName,
+      shouldIncludeDecorators
+    });
   }
 
   template += header;
@@ -598,10 +631,6 @@ export const parseSchema = ({
   template += footer;
 
   return template;
-};
-
-export const getSchemaOptions = (schema: any) => {
-  return _.isEmpty(schema._userProvidedOptions) ? "" : JSON.stringify(schema._userProvidedOptions);
 };
 
 interface LoadedSchemas {
