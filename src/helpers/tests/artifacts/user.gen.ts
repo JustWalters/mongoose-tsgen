@@ -17,11 +17,15 @@ import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
  * const userObject = user.toObject();
  * ```
  */
-export type UserFriend = {
+@Schema({"minimize":true,"typeKey":"type","strict":true})
+export class UserFriend extends mongoose.Types.Subdocument {
+@Prop({"required":true,"ref":"User","type":mongoose.Types.ObjectId})
 uid: User["_id"] | User;
+@Prop({"type":String})
 nickname?: string;
 _id: mongoose.Types.ObjectId;
 }
+ export const UserFriendSchema = SchemaFactory.createForClass(UserFriend);
 
 /**
  * Lean version of UserCitySubdocWithoutDefaultDocument
@@ -31,10 +35,13 @@ _id: mongoose.Types.ObjectId;
  * const userObject = user.toObject();
  * ```
  */
-export type UserCitySubdocWithoutDefault = {
+@Schema({"minimize":true,"typeKey":"type","strict":true})
+export class UserCitySubdocWithoutDefault extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 a?: string;
 _id: mongoose.Types.ObjectId;
 }
+ export const UserCitySubdocWithoutDefaultSchema = SchemaFactory.createForClass(UserCitySubdocWithoutDefault);
 
 /**
  * Lean version of UserDocument

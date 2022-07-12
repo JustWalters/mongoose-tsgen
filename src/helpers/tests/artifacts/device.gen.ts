@@ -104,10 +104,15 @@ status: string;
  * const deviceObject = device.toObject();
  * ```
  */
-export type DeviceHome = {
+@Schema({"_id":false})
+export class DeviceHome extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const DeviceHomeSchema = SchemaFactory.createForClass(DeviceHome);
 
 /**
  * Lean version of DeviceDocument
@@ -220,10 +225,15 @@ home?: DeviceHomeDocument;
  * const device2Object = device2.toObject();
  * ```
  */
-export type Device2Home = {
+@Schema({"_id":false})
+export class Device2Home extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const Device2HomeSchema = SchemaFactory.createForClass(Device2Home);
 
 /**
  * Lean version of Device2Document
@@ -336,10 +346,15 @@ home?: Device2HomeDocument;
  * const device3Object = device3.toObject();
  * ```
  */
-export type Device3Home = {
+@Schema({"_id":false})
+export class Device3Home extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const Device3HomeSchema = SchemaFactory.createForClass(Device3Home);
 
 /**
  * Lean version of Device3Document
@@ -452,10 +467,15 @@ home?: Device3HomeDocument;
  * const device4Object = device4.toObject();
  * ```
  */
-export type Device4Home = {
+@Schema({"_id":false})
+export class Device4Home extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const Device4HomeSchema = SchemaFactory.createForClass(Device4Home);
 
 /**
  * Lean version of Device4Document
@@ -568,10 +588,15 @@ home?: Device4HomeDocument;
  * const devicedefaultObject = devicedefault.toObject();
  * ```
  */
-export type DeviceDefaultHome = {
+@Schema({"_id":false})
+export class DeviceDefaultHome extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const DeviceDefaultHomeSchema = SchemaFactory.createForClass(DeviceDefaultHome);
 
 /**
  * Lean version of DeviceDefaultDocument
