@@ -145,17 +145,39 @@ export const replaceModelTypes = (
                 const docPropMatch = (nestedDocProps ?? documentProperties).find(
                   prop => prop.getName() === nameComponent
                 );
-                docPropMatch?.setType(virtuals[virtualName].returnType);
+                if (virtuals[virtualName].returnType)
+                  docPropMatch?.setType(virtuals[virtualName].returnType);
 
-                theClass?.addGetAccessor({
-                  kind: StructureKind.GetAccessor,
-                  name: virtualName,
-                  returnType: virtuals[virtualName].returnType,
-                  // JustinTODO: Would it be better to map it to StatementStructures somehow?
-                  statements: (virtuals[virtualName].value?.getStatements() || []).map(s =>
-                    s.getText()
-                  )
-                });
+                if (virtuals[virtualName].getter)
+                  theClass?.addGetAccessor({
+                    kind: StructureKind.GetAccessor,
+                    name: virtualName,
+                    returnType: virtuals[virtualName].returnType,
+                    // JustinTODO: Would it be better to map it to StatementStructures somehow?
+                    statements: (virtuals[virtualName].getter?.getStatements() || []).map(s =>
+                      s.getText()
+                    )
+                  });
+
+                if (virtuals[virtualName].setter)
+                  theClass?.addSetAccessor({
+                    kind: StructureKind.SetAccessor,
+                    name: virtualName,
+                    parameters: [
+                      {
+                        kind: StructureKind.Parameter,
+                        name: virtuals[virtualName].setter?.getParameters()[0]?.getName() || "",
+                        type:
+                          virtuals[virtualName].setter
+                            ?.getParameters()[0]
+                            ?.getType()
+                            .getText(virtuals[virtualName].setter?.getParameters()[0]) || ""
+                      }
+                    ],
+                    statements: virtuals[virtualName].setter
+                      ?.getStatementsWithComments()
+                      .map(s => s.getText())
+                  });
               }
               if (leanProperties) {
                 const leanPropMatch = (nestedLeanProps ?? leanProperties).find(

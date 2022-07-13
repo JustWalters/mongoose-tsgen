@@ -7,7 +7,9 @@ import {
   VariableDeclaration,
   ExportAssignment,
   ObjectLiteralExpression,
-  NewExpression
+  NewExpression,
+  FunctionExpression,
+  CallExpression
 } from "ts-morph";
 import glob from "glob";
 import path from "path";
@@ -107,6 +109,42 @@ function isSchemaConstructor(expression?: NewExpression): expression is NewExpre
   }
 
   return false;
+}
+
+function getVirtualSetter(callExpr: CallExpression): FunctionExpression | undefined {
+  let propAccessExpr = callExpr.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+
+  if (propAccessExpr?.getName() !== "set") {
+    propAccessExpr = propAccessExpr
+      ?.getFirstChildByKind(SyntaxKind.CallExpression)
+      ?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+  }
+
+  if (propAccessExpr?.getName() !== "set") {
+    return;
+  }
+
+  const funcExpr = propAccessExpr.getParent()?.getFirstChildByKind(SyntaxKind.FunctionExpression);
+
+  return funcExpr;
+}
+
+function getVirtualGetter(callExpr: CallExpression): FunctionExpression | undefined {
+  let propAccessExpr = callExpr.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+
+  if (propAccessExpr?.getName() !== "get") {
+    propAccessExpr = propAccessExpr
+      ?.getFirstChildByKind(SyntaxKind.CallExpression)
+      ?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+  }
+
+  if (propAccessExpr?.getName() !== "get") {
+    return;
+  }
+
+  const funcExpr = propAccessExpr.getParent()?.getFirstChildByKind(SyntaxKind.FunctionExpression);
+
+  return funcExpr;
 }
 
 function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
@@ -236,19 +274,14 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
       }
     } else if (callExpr) {
       // virtual property
-
-      let propAccessExpr = callExpr.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
-
-      if (propAccessExpr?.getName() === "set") {
-        propAccessExpr = propAccessExpr
-          .getFirstChildByKind(SyntaxKind.CallExpression)
-          ?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
-      }
-
-      if (propAccessExpr?.getName() !== "get") continue;
+      const setter = getVirtualSetter(callExpr);
+      const getter = getVirtualGetter(callExpr);
+      const propAccessExpr =
+        getter?.getParent().getFirstChildByKind(SyntaxKind.PropertyAccessExpression) ||
+        setter?.getParent().getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
 
       const schemaVariableName = propAccessExpr
-        .getFirstChildByKind(SyntaxKind.CallExpression)
+        ?.getFirstChildByKind(SyntaxKind.CallExpression)
         ?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression)
         ?.getFirstChildByKind(SyntaxKind.Identifier)
         ?.getText();
@@ -267,23 +300,33 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
         continue;
       }
 
+      const callExpr2 = propAccessExpr?.getFirstChildByKind(SyntaxKind.CallExpression);
+      const stringLiteral = callExpr2?.getArguments()[0];
+      const virtualName = stringLiteral?.getText();
+      if (!virtualName) {
+        if (process.env.DEBUG)
+          console.warn("tsreader: virtualName not found: ", {
+            virtualName
+          });
+        continue;
+      }
+
+      const virtualNameSanitized = virtualName.slice(1, virtualName.length - 1);
+      const virtuals = modelTypes[modelName].virtuals[virtualNameSanitized] || {};
+      if (!virtuals.getter) virtuals.getter = getter;
+      if (!virtuals.setter) virtuals.setter = setter;
+
       const funcExpr = propAccessExpr
         ?.getParent()
         ?.getFirstChildByKind(SyntaxKind.FunctionExpression);
-      const type = funcExpr?.getType()?.getText(funcExpr);
+      const type = virtuals.getter?.getType()?.getText(funcExpr);
 
-      const callExpr2 = propAccessExpr.getFirstChildByKind(SyntaxKind.CallExpression);
-
-      const stringLiteral = callExpr2?.getArguments()[0];
       const propAccessExpr2 = callExpr2?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
       if (propAccessExpr2?.getName() !== "virtual") continue;
-
-      const virtualName = stringLiteral?.getText();
       let returnType = type?.split("=> ")?.[1];
-      if (!returnType || !virtualName) {
+      if (!returnType) {
         if (process.env.DEBUG)
-          console.warn("tsreader: virtualName or returnType not found: ", {
-            virtualName,
+          console.warn("tsreader: returnType not found: ", {
             returnType
           });
         continue;
@@ -294,9 +337,9 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
        * This should be a fine workaround because virtual properties shouldn't return solely `void`, they return real values.
        */
       if (returnType === "void") returnType = "any"; // JustinTODO: Default this to unknown
-      const virtualNameSanitized = virtualName.slice(1, virtualName.length - 1);
+      virtuals.returnType = returnType;
 
-      modelTypes[modelName].virtuals[virtualNameSanitized] = { returnType, value: funcExpr };
+      modelTypes[modelName].virtuals[virtualNameSanitized] = virtuals;
     }
   }
 

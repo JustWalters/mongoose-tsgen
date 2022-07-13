@@ -92,6 +92,10 @@ definitionOfMarketValue?: ReportDefinitionOfMarketValue;
     get nameIsWayne(): boolean {
         return this.name === NAMES.WAYNE;
     }
+
+    set nameIsWayne(newName: string) {
+        this.name = newName;
+    }
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report);

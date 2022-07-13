@@ -73,6 +73,11 @@ const ReportSchema = new Schema({
 ReportSchema.virtual('nameIsWayne').get(function nameIsWayne() {
   return this.name === NAMES.WAYNE;
 })
+// TODO: Test having virtual in a variable & chaining the methods
+const niwVirt = ReportSchema.virtual('nameIsWayne');
+ReportSchema.virtual('nameIsWayne').set(function setName(newName: string) {
+  this.name = newName;
+})
 
 export const Report = mongoose.model('Report', ReportSchema);
 

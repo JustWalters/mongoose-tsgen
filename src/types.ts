@@ -15,7 +15,11 @@ export type ModelTypes = {
     query: { [funcName: string]: string };
     /** mongoose virtual types */
     virtuals: {
-      [virtualName: string]: { returnType: string; value: FunctionExpression | undefined };
+      [virtualName: string]: {
+        returnType: string;
+        getter: FunctionExpression | undefined;
+        setter: FunctionExpression | undefined;
+      };
     };
     schemaVariableName?: string;
     modelVariableName?: string;
