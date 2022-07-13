@@ -210,10 +210,13 @@ const parseChildSchemas = ({
       const path = child.model.path;
       const isSubdocArray = child.model.$isArraySubdocument;
       const name = getSubDocName(path, rootPath);
+      const defaultValuePath = `${path}.default`;
 
+      child.schema = _.cloneDeep(child.schema);
       child.schema._isReplacedWithSchema = true;
       child.schema._inferredInterfaceName = name;
       child.schema._isSubdocArray = isSubdocArray;
+      child.schema._default = flatSchemaTree[defaultValuePath];
 
       const requiredValuePath = `${path}.required`;
       if (requiredValuePath in flatSchemaTree && flatSchemaTree[requiredValuePath] === true) {
@@ -225,7 +228,6 @@ const parseChildSchemas = ({
        * here we indicate this on the child schema using _isDefaultSetToUndefined so that the parser properly sets the `isOptional` flag
        */
       if (isSubdocArray) {
-        const defaultValuePath = `${path}.default`;
         if (defaultValuePath in flatSchemaTree && flatSchemaTree[defaultValuePath] === undefined) {
           child.schema._isDefaultSetToUndefined = true;
         }
@@ -331,6 +333,7 @@ const formatPropOptions = (options: object) => {
       .replace('"type":"MongooseSchema.Types.ObjectId"', '"type":mongoose.Types.ObjectId')
       .replace('"type":"mongoose.Types.ObjectId"', '"type":mongoose.Types.ObjectId')
       .replace(/"type":"mongoose.Types.Array<([A-Za-z_]+)>"/, '"type":[$1]')
+      .replace(/"type":"mongoose.Types.DocumentArray<(.+)>"/, '"type":[$1]')
       .replace('"type":"any"', '"type":mongoose.Types.Mixed')
       .replace(/<\(?([a-zA-Z0-9_.<>]+)\)?\[\]>/, "<[$1]>") // For Maps
       .replace(/"type":"\(?([a-zA-Z0-9_.<>]+)\)?\[\]"/, '"type":[$1]')
@@ -351,7 +354,6 @@ const formatPropOptions = (options: object) => {
           `${valType}Schema`;
         return `"type":[${subSchema}]`;
       })
-      .replace(/"type":"mongoose.Types.DocumentArray<(.+)>"/, '"type":[$1]')
       .replace(/"type":"(.+ \| .+)"/g, (match, valType) => {
         const isAPopulatableField = match.includes('[\\"_id\\"]');
         if (isAPopulatableField) return '"type":mongoose.Types.ObjectId';
@@ -393,6 +395,8 @@ const formatPropDecorator = ({
     "match"
   ]);
   propOptions.type = valType;
+  if (options._default !== undefined && propOptions.default === undefined)
+    propOptions.default = options._default;
 
   if (!isOptional && propOptions.required === undefined) {
     propOptions.required = true;
@@ -557,7 +561,9 @@ export const getParseKeyFn = (
     if (isArray) {
       if (isDocument)
         valType = `mongoose.Types.${val._isSubdocArray ? "Document" : ""}Array<` + valType + ">";
-      else {
+      else if (val._isSubdocArray && includeDecorators) {
+        valType = `mongoose.Types.DocumentArray<${valType}>`;
+      } else {
         // if valType includes a space, likely means its a union type (ie "number | string") so lets wrap it in brackets when adding the array to the type
         if (valType.includes(" ")) valType = `(${valType})`;
         valType = `${valType}[]`;

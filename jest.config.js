@@ -7,5 +7,9 @@ module.exports = {
       tsConfig: "tsconfig.test.json"
     }
   },
+  watchPathIgnorePatterns: [
+    "<rootDir>/src/helpers/tests/artifacts/.*.ts",
+    "<rootDir>/src/helpers/tests/artifacts/.*.gen.ts"
+  ],
   extraGlobals: ["Math", "JSON"]
 };

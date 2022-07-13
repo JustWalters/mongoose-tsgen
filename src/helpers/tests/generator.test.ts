@@ -26,7 +26,7 @@ describe.only("generateTypes", () => {
 
   const genFilePath = "mtgen-test.ts";
 
-  test.only("generate file string success", async () => {
+  test("generate file string success", async () => {
     setupFolderStructure("./models", "user", true);
     const modelsPaths = await paths.getModelsPaths("./src/helpers/tests/models/user.ts");
     const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");
@@ -83,5 +83,28 @@ describe.only("generateTypes", () => {
 
     cleanupTs?.();
     expect(sourceFile.getFullText().trim()).toBe(getExpectedString("user2.gen.ts").trim());
+  });
+
+  test.only("heavily nested", async () => {
+    const modelsPaths = await paths.getModelsPaths("./src/helpers/tests/artifacts/report.ts");
+    const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");
+
+    const schemas = parser.loadSchemas(modelsPaths);
+
+    let sourceFile = generator.createSourceFile(genFilePath);
+    sourceFile = await generator.generateTypes({ schemas, sourceFile });
+
+    const modelTypes = tsReader.getModelTypes(modelsPaths);
+    generator.replaceModelTypes(sourceFile, modelTypes, schemas);
+    generator.addPopulateHelpers(sourceFile);
+    generator.overloadQueryPopulate(sourceFile);
+
+    fs.writeFileSync(
+      path.join(__dirname, "artifacts/report.gen-saved.ts"),
+      sourceFile.getFullText()
+    );
+
+    cleanupTs?.();
+    expect(sourceFile.getFullText().trim()).toBe(getExpectedString("report.gen.ts").trim());
   });
 });
