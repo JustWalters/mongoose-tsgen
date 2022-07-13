@@ -293,10 +293,10 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
        * @experimental trying this out since certain virtual types are indeterminable and get set to void, which creates incorrect TS errors
        * This should be a fine workaround because virtual properties shouldn't return solely `void`, they return real values.
        */
-      if (returnType === "void") returnType = "any";
+      if (returnType === "void") returnType = "any"; // JustinTODO: Default this to unknown
       const virtualNameSanitized = virtualName.slice(1, virtualName.length - 1);
 
-      modelTypes[modelName].virtuals[virtualNameSanitized] = returnType;
+      modelTypes[modelName].virtuals[virtualNameSanitized] = { returnType, value: funcExpr };
     }
   }
 

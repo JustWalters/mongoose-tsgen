@@ -17,7 +17,7 @@ const definitionOfMarketValue = {
   generate: generate,
 }
 const backEndDataMapping = {}
-const sharedData = {}
+const NAMES = { WAYNE: 'Wayne' }
 
 const NarrativeSchema = new Schema({
   narrative: {
@@ -69,6 +69,10 @@ const ReportSchema = new Schema({
   providedDocuments: { type: [{ type: FileReferenceSchema, default: null }], default: [] },
   definitionOfMarketValue: { type: NarrativeSchema, narrative: definitionOfMarketValue, default: {} },
 });
+
+ReportSchema.virtual('nameIsWayne').get(function nameIsWayne() {
+  return this.name === NAMES.WAYNE;
+})
 
 export const Report = mongoose.model('Report', ReportSchema);
 

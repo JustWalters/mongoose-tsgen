@@ -88,6 +88,10 @@ letterOfEngagement?: ReportLetterOfEngagement;
 providedDocuments: mongoose.Types.DocumentArray<ReportProvidedDocument>;
 @Prop({"type":ReportDefinitionOfMarketValueSchema,"default":{}})
 definitionOfMarketValue?: ReportDefinitionOfMarketValue;
+
+    get nameIsWayne(): boolean {
+        return this.name === NAMES.WAYNE;
+    }
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report);
@@ -197,6 +201,7 @@ _id: mongoose.Types.ObjectId;
 export type ReportDocument = mongoose.Document<mongoose.Types.ObjectId, ReportQueries> & ReportMethods & {
 name?: string;
 _id: mongoose.Types.ObjectId;
+nameIsWayne: boolean;
 letterOfEngagement?: ReportLetterOfEngagementDocument;
 providedDocuments: mongoose.Types.DocumentArray<ReportProvidedDocumentDocument>;
 definitionOfMarketValue?: ReportDefinitionOfMarketValueDocument;

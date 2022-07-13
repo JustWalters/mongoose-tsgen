@@ -1,4 +1,4 @@
-import { Expression } from "ts-morph";
+import { Expression, FunctionExpression } from "ts-morph";
 
 /**
  * Contains information parsed from ts-morph about various types for each model
@@ -14,7 +14,9 @@ export type ModelTypes = {
     /** mongoose query function types */
     query: { [funcName: string]: string };
     /** mongoose virtual types */
-    virtuals: { [virtualName: string]: string };
+    virtuals: {
+      [virtualName: string]: { returnType: string; value: FunctionExpression | undefined };
+    };
     schemaVariableName?: string;
     modelVariableName?: string;
     filePath: string;

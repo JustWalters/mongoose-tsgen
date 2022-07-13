@@ -4,7 +4,8 @@ import {
   SourceFile,
   SyntaxKind,
   PropertySignature,
-  PropertyDeclaration
+  PropertyDeclaration,
+  StructureKind
 } from "ts-morph";
 import mongoose from "mongoose";
 import * as parser from "./parser";
@@ -116,6 +117,7 @@ export const replaceModelTypes = (
     // virtuals
     const virtualNames = Object.keys(virtuals);
     if (virtualNames.length > 0) {
+      const theClass = sourceFile?.getClass(modelName);
       const documentProperties = sourceFile
         ?.getTypeAlias(`${modelName}Document`)
         ?.getFirstChildByKind(SyntaxKind.IntersectionType)
@@ -129,7 +131,7 @@ export const replaceModelTypes = (
           ?.getTypeAlias(`${modelName}`)
           ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
           ?.getChildrenOfKind(SyntaxKind.PropertySignature) ||
-          sourceFile?.getClass(`${modelName}`)?.getChildrenOfKind(SyntaxKind.PropertyDeclaration));
+          theClass?.getChildrenOfKind(SyntaxKind.PropertyDeclaration));
 
       if (documentProperties || leanProperties) {
         virtualNames.forEach(virtualName => {
@@ -143,14 +145,24 @@ export const replaceModelTypes = (
                 const docPropMatch = (nestedDocProps ?? documentProperties).find(
                   prop => prop.getName() === nameComponent
                 );
-                docPropMatch?.setType(virtuals[virtualName]);
+                docPropMatch?.setType(virtuals[virtualName].returnType);
+
+                theClass?.addGetAccessor({
+                  kind: StructureKind.GetAccessor,
+                  name: virtualName,
+                  returnType: virtuals[virtualName].returnType,
+                  // JustinTODO: Would it be better to map it to StatementStructures somehow?
+                  statements: (virtuals[virtualName].value?.getStatements() || []).map(s =>
+                    s.getText()
+                  )
+                });
               }
               if (leanProperties) {
                 const leanPropMatch = (nestedLeanProps ?? leanProperties).find(
                   prop => prop.getName() === nameComponent
                 );
 
-                leanPropMatch?.setType(virtuals[virtualName]);
+                leanPropMatch?.setType(virtuals[virtualName].returnType);
                 if (leanPropMatch?.getKind() === SyntaxKind.PropertyDeclaration) {
                   const propertyDeclaration = leanPropMatch as PropertyDeclaration;
                   propertyDeclaration.getDecorators().forEach(decorator => {
