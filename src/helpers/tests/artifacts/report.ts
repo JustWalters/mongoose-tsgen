@@ -70,14 +70,15 @@ const ReportSchema = new Schema({
   definitionOfMarketValue: { type: NarrativeSchema, narrative: definitionOfMarketValue, default: {} },
 });
 
-ReportSchema.virtual('nameIsWayne').get(function nameIsWayne() {
-  return this.name === NAMES.WAYNE;
-})
-// TODO: Test having virtual in a variable & chaining the methods
-const niwVirt = ReportSchema.virtual('nameIsWayne');
 ReportSchema.virtual('nameIsWayne').set(function setName(newName: string) {
   this.name = newName;
+  })
+ReportSchema.virtual('nameIsWayne')
+.get(function nameIsWayne() {
+  return this.name === NAMES.WAYNE;
 })
+// TODO: Fix having virtual in a variable (like below)
+// const niwVirt = ReportSchema.virtual('nameIsWayne');
 
 export const Report = mongoose.model('Report', ReportSchema);
 

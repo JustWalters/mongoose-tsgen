@@ -17,6 +17,8 @@ import * as fs from "fs";
 import stripJsonComments from "strip-json-comments";
 import { ModelTypes } from "../types";
 
+process.env.DEBUG = "true";
+
 function getNameAndType(funcDeclaration: MethodDeclaration) {
   const name = funcDeclaration.getName();
   const typeNode = funcDeclaration.getType();
@@ -276,9 +278,14 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
       // virtual property
       const setter = getVirtualSetter(callExpr);
       const getter = getVirtualGetter(callExpr);
-      const propAccessExpr =
-        getter?.getParent().getFirstChildByKind(SyntaxKind.PropertyAccessExpression) ||
-        setter?.getParent().getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+      const firstAccessor =
+        (getter?.getPos() ?? Number.MAX_SAFE_INTEGER) <
+        (setter?.getPos() ?? Number.MAX_SAFE_INTEGER) ?
+          getter :
+          setter;
+      const propAccessExpr = firstAccessor
+        ?.getParent()
+        .getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
 
       const schemaVariableName = propAccessExpr
         ?.getFirstChildByKind(SyntaxKind.CallExpression)
@@ -316,7 +323,7 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
       if (!virtuals.getter) virtuals.getter = getter;
       if (!virtuals.setter) virtuals.setter = setter;
 
-      const funcExpr = propAccessExpr
+      const funcExpr = firstAccessor
         ?.getParent()
         ?.getFirstChildByKind(SyntaxKind.FunctionExpression);
       const type = virtuals.getter?.getType()?.getText(funcExpr);
@@ -329,6 +336,7 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
           console.warn("tsreader: returnType not found: ", {
             returnType
           });
+        modelTypes[modelName].virtuals[virtualNameSanitized] = virtuals;
         continue;
       }
 
