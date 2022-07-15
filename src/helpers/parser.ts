@@ -211,12 +211,28 @@ const parseChildSchemas = ({
       const isSubdocArray = child.model.$isArraySubdocument;
       const name = getSubDocName(path, rootPath);
       const defaultValuePath = `${path}.default`;
+      const narrativePath = `${path}.narrative`;
 
       child.schema = _.cloneDeep(child.schema);
       child.schema._isReplacedWithSchema = true;
       child.schema._inferredInterfaceName = name;
       child.schema._isSubdocArray = isSubdocArray;
       child.schema._default = flatSchemaTree[defaultValuePath];
+      // Is there a generic way to get the narrative?
+      child.schema._narrative = (() => {
+        const fullNarrativePaths = Object.keys(flatSchemaTree).filter(k => k.includes(narrativePath))
+        if (fullNarrativePaths.length === 0) { 
+          return
+        }
+
+        const narrativeObj: Record<string, any> = {}
+        fullNarrativePaths.forEach(path => {
+          const value = flatSchemaTree[path]
+          const key = path.replace(`${narrativePath}.`, "")
+          narrativeObj[key] = value
+        })
+        return narrativeObj
+      })()
 
       const requiredValuePath = `${path}.required`;
       if (requiredValuePath in flatSchemaTree && flatSchemaTree[requiredValuePath] === true) {
@@ -334,7 +350,9 @@ const formatPropOptions = (options: object) => {
       .replace('"type":"mongoose.Types.ObjectId"', '"type":mongoose.Types.ObjectId')
       .replace(/"type":"mongoose.Types.Array<([A-Za-z_]+)>"/, '"type":[$1]')
       .replace(/"type":"mongoose.Types.DocumentArray<(.+)>"/, '"type":[$1]')
-      .replace('"type":"any"', '"type":mongoose.Types.Mixed')
+      .replace('"type":"any"', '"type":mongoose.Schema.Types.Mixed')
+      // TODO: This could probably be moved earlier in the process?
+      .replace(/"type":"{.+}"/, '"type":mongoose.Schema.Types.Mixed')
       .replace(/<\(?([a-zA-Z0-9_.<>]+)\)?\[\]>/, "<[$1]>") // For Maps
       .replace(/"type":"\(?([a-zA-Z0-9_.<>]+)\)?\[\]"/, '"type":[$1]')
       .replace(/"type":"(\w+)"/, (match, valType) => {
@@ -392,12 +410,16 @@ const formatPropDecorator = ({
     "lowercase",
     "unique",
     "validate",
-    "match"
+    "match",
+    "get",
   ]);
   propOptions.type = valType;
   if (options._default !== undefined && propOptions.default === undefined)
     propOptions.default = options._default;
 
+  if (options._narrative)
+    propOptions.narrative = options._narrative;
+  
   if (!isOptional && propOptions.required === undefined) {
     propOptions.required = true;
   }
@@ -547,7 +569,8 @@ export const getParseKeyFn = (
         });
 
         valType += "}";
-        isOptional = false;
+        // JustinTODO: I don't know if we need the isOptional = false for our purposes. I don't fully understand it.
+        // isOptional = false;
       } else {
         valType = convertedType;
       }

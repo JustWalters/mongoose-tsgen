@@ -58,7 +58,7 @@ export const ReportProvidedDocumentSchema = SchemaFactory.createForClass(ReportP
  */
 @Schema()
 export class ReportDefinitionOfMarketValue extends mongoose.Types.Subdocument {
-@Prop({"default":"JustinTODO","required":true,"type":mongoose.Types.Mixed})
+@Prop({"default":"JustinTODO","required":true,"get":"JustinTODO","type":mongoose.Schema.Types.Mixed})
 narrative: any;
 @Prop({"default":false,"required":true,"type":Boolean})
 locked: boolean;
@@ -68,6 +68,101 @@ _id: mongoose.Types.ObjectId;
 }
 
 export const ReportDefinitionOfMarketValueSchema = SchemaFactory.createForClass(ReportDefinitionOfMarketValue);
+
+/**
+ * Lean version of ReportInlineFileDocument
+ * 
+ * This has all Mongoose getters & functions removed. This type will be returned from `ReportInlineDocument.toObject()`.
+ * ```
+ * const reportinlineObject = reportinline.toObject();
+ * ```
+ */
+@Schema()
+export class ReportInlineFile extends mongoose.Types.Subdocument {
+@Prop({"required":true,"type":String})
+name: string;
+@Prop({"type":String})
+fileName?: string;
+_id: mongoose.Types.ObjectId;
+}
+
+export const ReportInlineFileSchema = SchemaFactory.createForClass(ReportInlineFile);
+
+/**
+ * Lean version of ReportInlinePlainFileDocument
+ * 
+ * This has all Mongoose getters & functions removed. This type will be returned from `ReportInlineDocument.toObject()`.
+ * ```
+ * const reportinlineObject = reportinline.toObject();
+ * ```
+ */
+@Schema()
+export class ReportInlinePlainFile extends mongoose.Types.Subdocument {
+@Prop({"required":true,"type":String})
+name: string;
+@Prop({"type":String})
+fileName?: string;
+_id: mongoose.Types.ObjectId;
+}
+
+export const ReportInlinePlainFileSchema = SchemaFactory.createForClass(ReportInlinePlainFile);
+
+/**
+ * Lean version of ReportInlineDocument
+ * 
+ * This has all Mongoose getters & functions removed. This type will be returned from `ReportDocument.toObject()`.
+ * ```
+ * const reportObject = report.toObject();
+ * ```
+ */
+@Schema()
+export class ReportInline extends mongoose.Types.Subdocument {
+@Prop({"type":String})
+name?: string;
+_id: mongoose.Types.ObjectId;
+@Prop({"type":ReportInlineFileSchema})
+file?: ReportInlineFile;
+@Prop({"type":ReportInlinePlainFileSchema})
+plainFile?: ReportInlinePlainFile;
+}
+
+export const ReportInlineSchema = SchemaFactory.createForClass(ReportInline);
+
+/**
+ * Lean version of ReportNamedReferenceFileDocument
+ * 
+ * This has all Mongoose getters & functions removed. This type will be returned from `ReportNamedReferenceDocument.toObject()`.
+ * ```
+ * const reportnamedreferenceObject = reportnamedreference.toObject();
+ * ```
+ */
+@Schema()
+export class ReportNamedReferenceFile extends mongoose.Types.Subdocument {
+@Prop({"required":true,"type":String})
+name: string;
+@Prop({"type":String})
+fileName?: string;
+_id: mongoose.Types.ObjectId;
+}
+
+export const ReportNamedReferenceFileSchema = SchemaFactory.createForClass(ReportNamedReferenceFile);
+
+/**
+ * Lean version of ReportNamedReferenceDocument
+ * 
+ * This has all Mongoose getters & functions removed. This type will be returned from `ReportDocument.toObject()`.
+ * ```
+ * const reportObject = report.toObject();
+ * ```
+ */
+@Schema()
+export class ReportNamedReference extends mongoose.Types.Subdocument {
+_id: mongoose.Types.ObjectId;
+@Prop({"required":true,"type":ReportNamedReferenceFileSchema})
+file: ReportNamedReferenceFile;
+}
+
+export const ReportNamedReferenceSchema = SchemaFactory.createForClass(ReportNamedReference);
 
 /**
  * Lean version of ReportDocument
@@ -81,13 +176,21 @@ export const ReportDefinitionOfMarketValueSchema = SchemaFactory.createForClass(
 export class Report extends mongoose.Types.Document {
 @Prop({"type":String})
 name?: string;
+@Prop({"type":mongoose.Schema.Types.Mixed})
+plainObject?: {
+showRETaxes?: boolean;
+};
 _id: mongoose.Types.ObjectId;
 @Prop({"type":ReportLetterOfEngagementSchema,"default":null})
 letterOfEngagement?: ReportLetterOfEngagement;
 @Prop({"type":[ReportProvidedDocumentSchema],"default":[],"required":true})
 providedDocuments: mongoose.Types.DocumentArray<ReportProvidedDocument>;
-@Prop({"type":ReportDefinitionOfMarketValueSchema,"default":{}})
+@Prop({"type":ReportDefinitionOfMarketValueSchema,"default":{},"narrative":definitionOfMarketValue})
 definitionOfMarketValue?: ReportDefinitionOfMarketValue;
+@Prop({"type":ReportInlineSchema})
+inline?: ReportInline;
+@Prop({"type":ReportNamedReferenceSchema})
+namedReference?: ReportNamedReference;
 
     get nameIsWayne(): boolean {
         return this.name === NAMES.WAYNE;
@@ -199,16 +302,91 @@ _id: mongoose.Types.ObjectId;
  * 
  * Pass this type to the Mongoose Model constructor:
  * ```
+ * const ReportInline = mongoose.model<ReportInlineDocument, ReportInlineModel>("ReportInline", ReportInlineSchema);
+ * ```
+ */
+export type ReportInlineFileDocument = mongoose.Document<mongoose.Types.ObjectId> & {
+name: string;
+fileName?: string;
+_id: mongoose.Types.ObjectId;
+}
+
+/**
+ * Mongoose Document type
+ * 
+ * Pass this type to the Mongoose Model constructor:
+ * ```
+ * const ReportInline = mongoose.model<ReportInlineDocument, ReportInlineModel>("ReportInline", ReportInlineSchema);
+ * ```
+ */
+export type ReportInlinePlainFileDocument = mongoose.Document<mongoose.Types.ObjectId> & {
+name: string;
+fileName?: string;
+_id: mongoose.Types.ObjectId;
+}
+
+/**
+ * Mongoose Document type
+ * 
+ * Pass this type to the Mongoose Model constructor:
+ * ```
+ * const Report = mongoose.model<ReportDocument, ReportModel>("Report", ReportSchema);
+ * ```
+ */
+export type ReportInlineDocument = mongoose.Document<mongoose.Types.ObjectId> & {
+name?: string;
+_id: mongoose.Types.ObjectId;
+file?: ReportInlineFileDocument;
+plainFile?: ReportInlinePlainFileDocument;
+}
+
+/**
+ * Mongoose Document type
+ * 
+ * Pass this type to the Mongoose Model constructor:
+ * ```
+ * const ReportNamedReference = mongoose.model<ReportNamedReferenceDocument, ReportNamedReferenceModel>("ReportNamedReference", ReportNamedReferenceSchema);
+ * ```
+ */
+export type ReportNamedReferenceFileDocument = mongoose.Document<mongoose.Types.ObjectId> & {
+name: string;
+fileName?: string;
+_id: mongoose.Types.ObjectId;
+}
+
+/**
+ * Mongoose Document type
+ * 
+ * Pass this type to the Mongoose Model constructor:
+ * ```
+ * const Report = mongoose.model<ReportDocument, ReportModel>("Report", ReportSchema);
+ * ```
+ */
+export type ReportNamedReferenceDocument = mongoose.Document<mongoose.Types.ObjectId> & {
+_id: mongoose.Types.ObjectId;
+file: ReportNamedReferenceFileDocument;
+}
+
+/**
+ * Mongoose Document type
+ * 
+ * Pass this type to the Mongoose Model constructor:
+ * ```
  * const Report = mongoose.model<ReportDocument, ReportModel>("Report", ReportSchema);
  * ```
  */
 export type ReportDocument = mongoose.Document<mongoose.Types.ObjectId, ReportQueries> & ReportMethods & {
 name?: string;
+plainObject?: {
+showRETaxes?: boolean;
+};
 _id: mongoose.Types.ObjectId;
 nameIsWayne: boolean;
 letterOfEngagement?: ReportLetterOfEngagementDocument;
 providedDocuments: mongoose.Types.DocumentArray<ReportProvidedDocumentDocument>;
 definitionOfMarketValue?: ReportDefinitionOfMarketValueDocument;
+inline?: ReportInlineDocument;
+namedReference?: ReportNamedReferenceDocument;
 }
 
 /**

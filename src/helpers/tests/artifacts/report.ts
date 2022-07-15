@@ -5,6 +5,9 @@ const FileReferenceSchema = new Schema({
   name: { type: String, required: true },
   fileName: String,
 });
+const NamedReferenceSchema = new Schema({
+  file: { type: FileReferenceSchema, required: true },
+});
 
 const identity = arg => { return arg; }
 const generate = identity
@@ -68,6 +71,15 @@ const ReportSchema = new Schema({
   letterOfEngagement: { type: FileReferenceSchema, default: null },
   providedDocuments: { type: [{ type: FileReferenceSchema, default: null }], default: [] },
   definitionOfMarketValue: { type: NarrativeSchema, narrative: definitionOfMarketValue, default: {} },
+  inline: new Schema({
+    name: String,
+    file: { type: FileReferenceSchema, },
+    plainFile: FileReferenceSchema,
+  }),
+  namedReference: { type: NamedReferenceSchema, },
+  plainObject: {
+    showRETaxes: Boolean,
+  },
 });
 
 ReportSchema.virtual('nameIsWayne').set(function setName(newName: string) {

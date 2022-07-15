@@ -63,7 +63,7 @@ lastName: string;
 /**
  * single line jsdoc
  */
- @Prop({"type":mongoose.Types.Mixed})
+ @Prop({"type":mongoose.Schema.Types.Mixed})
 metadata?: any;
 @Prop({"ref":"User","type":mongoose.Types.ObjectId})
 bestFriend?: User["_id"] | User;
@@ -72,7 +72,7 @@ bestFriend?: User["_id"] | User;
  * jsdoc
  */
  @Prop({"type":[UserFriendSchema],"required":true})
-friends: UserFriend[];
+friends: mongoose.Types.DocumentArray<UserFriend>;
 @Prop({"type":"{\ncoordinates: Number[];\nsubdocWithoutDefault?: UserCitySubdocWithoutDefault[];\n}","required":true})
 city: {
 coordinates: number[];

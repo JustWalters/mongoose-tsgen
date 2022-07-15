@@ -17,8 +17,6 @@ import * as fs from "fs";
 import stripJsonComments from "strip-json-comments";
 import { ModelTypes } from "../types";
 
-process.env.DEBUG = "true";
-
 function getNameAndType(funcDeclaration: MethodDeclaration) {
   const name = funcDeclaration.getName();
   const typeNode = funcDeclaration.getType();
