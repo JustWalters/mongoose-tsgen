@@ -342,7 +342,7 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
        * @experimental trying this out since certain virtual types are indeterminable and get set to void, which creates incorrect TS errors
        * This should be a fine workaround because virtual properties shouldn't return solely `void`, they return real values.
        */
-      if (returnType === "void") returnType = "any"; // JustinTODO: Default this to unknown
+      if (returnType === "void") returnType = "unknown";
       virtuals.returnType = returnType;
 
       modelTypes[modelName].virtuals[virtualNameSanitized] = virtuals;

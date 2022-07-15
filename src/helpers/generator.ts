@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 import * as parser from "./parser";
 import * as templates from "./templates";
 import { ModelTypes } from "../types";
+import { MIGRATION_IS_NOT_DONE } from "../constants";
 
 // this strips comments of special tokens since ts-morph generates jsdoc tokens automatically
 const cleanComment = (comment: string) => {
@@ -37,7 +38,7 @@ export const replaceModelTypes = (
         ?.getChildrenOfKind(SyntaxKind.PropertyDeclaration)
         .forEach(prop => {
           const decoratorArg = prop.getDecorator("Prop")?.getArguments()[0];
-          if (decoratorArg && decoratorArg.getText().includes("JustinTODO")) {
+          if (decoratorArg && decoratorArg.getText().includes(MIGRATION_IS_NOT_DONE)) {
             if (Node.isObjectLiteralExpression(decoratorArg)) {
               decoratorArg.getProperties().forEach(property => {
                 if (
@@ -47,7 +48,7 @@ export const replaceModelTypes = (
                   const propertyName = property.getName();
                   const propertyValue = property.getInitializer()?.getText();
 
-                  if (propertyValue?.includes("JustinTODO")) {
+                  if (propertyValue?.includes(MIGRATION_IS_NOT_DONE)) {
                     const newType = properties[prop.getName()];
 
                     if (Node.isObjectLiteralExpression(newType)) {
@@ -353,7 +354,7 @@ export const generateTypes = ({
     Object.keys(schemas).forEach(modelName => {
       const schema = schemas[modelName];
 
-      const shouldLeanIncludeVirtuals = parser.getShouldLeanIncludeVirtuals(schema);
+      const shouldLeanIncludeVirtuals = true // parser.getShouldLeanIncludeVirtuals(schema);
       // passing modelName causes childSchemas to be processed
       const leanInterfaceStr = parser.parseSchema({
         schema,

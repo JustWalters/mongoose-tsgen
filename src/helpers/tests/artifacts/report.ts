@@ -56,6 +56,10 @@ const NarrativeSchema = new Schema({
   modified: { type: Boolean, default: false, required: true },
 });
 
+NarrativeSchema.virtual('isLocked').get(function () {
+  return !!this.locked;
+})
+
 NarrativeSchema.methods.getNarrativeOptions = function () {
   const parent = this.parent();
   // @ts-ignore

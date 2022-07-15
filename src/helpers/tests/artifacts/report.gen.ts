@@ -58,13 +58,15 @@ export const ReportProvidedDocumentSchema = SchemaFactory.createForClass(ReportP
  */
 @Schema()
 export class ReportDefinitionOfMarketValue extends mongoose.Types.Subdocument {
-@Prop({"default":"JustinTODO","required":true,"get":"JustinTODO","type":mongoose.Schema.Types.Mixed})
+@Prop({"default":"MIGRATION_IS_NOT_DONE","required":true,"get":"MIGRATION_IS_NOT_DONE","type":mongoose.Schema.Types.Mixed})
 narrative: any;
 @Prop({"default":false,"required":true,"type":Boolean})
 locked: boolean;
 @Prop({"default":false,"required":true,"type":Boolean})
 modified: boolean;
 _id: mongoose.Types.ObjectId;
+@Prop({"get":"MIGRATION_IS_NOT_DONE","type":MIGRATE_THIS_VIRTUAL_MANUALLYSchema,"required":true})
+isLocked: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const ReportDefinitionOfMarketValueSchema = SchemaFactory.createForClass(ReportDefinitionOfMarketValue);
@@ -295,6 +297,7 @@ narrative: any;
 locked: boolean;
 modified: boolean;
 _id: mongoose.Types.ObjectId;
+isLocked: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 /**

@@ -3,6 +3,7 @@ import flatten, { unflatten } from "flat";
 import _ from "lodash";
 
 import * as templates from "./templates";
+import { MIGRATE_THIS_VIRTUAL_MANUALLY, MIGRATION_IS_NOT_DONE } from "../constants";
 
 export const getShouldLeanIncludeVirtuals = (schema: any) => {
   // Check the toObject options to determine if virtual property should be included.
@@ -280,7 +281,7 @@ const parseChildSchemas = ({
             `\n\nexport const ${name}Schema = SchemaFactory.createForClass(${name});`
           }\n\n`,
           noMongoose,
-          shouldLeanIncludeVirtuals: getShouldLeanIncludeVirtuals(child.schema),
+          shouldLeanIncludeVirtuals: true, // getShouldLeanIncludeVirtuals(child.schema),
           shouldIncludeDecorators: true
         });
       } else {
@@ -337,10 +338,10 @@ const formatPropOptions = (options: object) => {
   return (
     JSON.stringify(options, (key, value) => {
       if (typeof value === "function") {
-        return "JustinTODO";
+        return MIGRATION_IS_NOT_DONE;
       }
       if (value instanceof RegExp) {
-        return "JustinTODO";
+        return MIGRATION_IS_NOT_DONE;
       }
       return value;
     })
@@ -431,7 +432,8 @@ export const getParseKeyFn = (
   isDocument: boolean,
   shouldLeanIncludeVirtuals: boolean,
   noMongoose: boolean,
-  includeDecorators = false
+  includeDecorators = false,
+  fromModel = false
 ) => {
   return (key: string, valOriginal: any): string => {
     // if the value is an object, we need to deepClone it to ensure changes to `val` aren't persisted in parent function
@@ -524,7 +526,10 @@ export const getParseKeyFn = (
       // if not lean doc and lean docs shouldnt include virtuals, ignore entry
       if (!isDocument && !shouldLeanIncludeVirtuals) return "";
 
-      valType = "any";
+      // We add proper virtuals for models already
+      if (fromModel && !isDocument) return ""
+
+      valType = MIGRATE_THIS_VIRTUAL_MANUALLY;
       isOptional = false;
     } else if (
       key &&
@@ -644,12 +649,14 @@ export const parseSchema = ({
   template += header;
 
   const schemaTree = schema.tree;
+  const MODEL_NAME = 'Report'; // We're getting reaaal hacky
 
   const parseKey = getParseKeyFn(
     isDocument,
     shouldLeanIncludeVirtuals,
     noMongoose,
-    shouldIncludeDecorators
+    shouldIncludeDecorators,
+    modelName === MODEL_NAME,
   );
 
   Object.keys(schemaTree).forEach((key: string) => {
