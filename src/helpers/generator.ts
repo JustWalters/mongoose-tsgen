@@ -117,7 +117,7 @@ export const replaceModelTypes = (
 
     // virtuals
     const virtualNames = Object.keys(virtuals);
-    if (virtualNames.length > 0) {
+    if (virtualNames && virtualNames.length > 0) {
       const theClass = sourceFile?.getClass(modelName);
       const documentProperties = sourceFile
         ?.getTypeAlias(`${modelName}Document`)
@@ -152,7 +152,7 @@ export const replaceModelTypes = (
                 if (virtuals[virtualName].getter)
                   theClass?.addGetAccessor({
                     kind: StructureKind.GetAccessor,
-                    name: virtualName,
+                    name: `"${virtualName}"`,
                     returnType: virtuals[virtualName].returnType,
                     // JustinTODO: Would it be better to map it to StatementStructures somehow?
                     statements: (virtuals[virtualName].getter?.getStatements() || []).map(s =>
@@ -163,7 +163,7 @@ export const replaceModelTypes = (
                 if (virtuals[virtualName].setter)
                   theClass?.addSetAccessor({
                     kind: StructureKind.SetAccessor,
-                    name: virtualName,
+                    name: `"${virtualName}"`,
                     parameters: [
                       {
                         kind: StructureKind.Parameter,
@@ -185,7 +185,8 @@ export const replaceModelTypes = (
                   prop => prop.getName() === nameComponent
                 );
 
-                leanPropMatch?.setType(virtuals[virtualName].returnType);
+                if (virtuals[virtualName].returnType)
+                  leanPropMatch?.setType(virtuals[virtualName].returnType);
                 if (leanPropMatch?.getKind() === SyntaxKind.PropertyDeclaration) {
                   const propertyDeclaration = leanPropMatch as PropertyDeclaration;
                   propertyDeclaration.getDecorators().forEach(decorator => {
@@ -215,7 +216,7 @@ export const replaceModelTypes = (
     }
 
     // TODO: this section is almost identical to the virtual property section above, refactor
-    if (comments.length > 0) {
+    if (comments && comments.length > 0) {
       const documentProperties = sourceFile
         ?.getTypeAlias(`${modelName}Document`)
         ?.getFirstChildByKind(SyntaxKind.IntersectionType)
@@ -344,7 +345,7 @@ export const generateTypes = ({
     if (shouldIncludeDecorators) writer.blankLine().write(templates.NEST_JS_IMPORT);
 
     // custom, user-defined imports
-    if (imports.length > 0) writer.write(imports.join("\n"));
+    if (imports && imports.length > 0) writer.write(imports.join("\n"));
 
     writer.blankLine();
     // writer.write("if (true)").block(() => {
@@ -354,7 +355,7 @@ export const generateTypes = ({
     Object.keys(schemas).forEach(modelName => {
       const schema = schemas[modelName];
 
-      const shouldLeanIncludeVirtuals = true // parser.getShouldLeanIncludeVirtuals(schema);
+      const shouldLeanIncludeVirtuals = true; // parser.getShouldLeanIncludeVirtuals(schema);
       // passing modelName causes childSchemas to be processed
       const leanInterfaceStr = parser.parseSchema({
         schema,

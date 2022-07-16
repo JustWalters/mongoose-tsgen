@@ -549,7 +549,14 @@ export const getParseKeyFn = (
     } else if (val.ref) {
       let docRef: string;
 
-      docRef = val.ref.replace(`'`, "");
+      if (typeof val.ref === "string") {
+        docRef = val.ref.replace(`'`, "");
+      } else if (val.ref.name) {
+        docRef = val.ref.modelName;
+      } else {
+        docRef = ''
+      }
+
       if (docRef.includes(".")) {
         docRef = getSubDocName(docRef);
       }

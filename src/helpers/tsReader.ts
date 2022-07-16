@@ -17,6 +17,9 @@ import * as fs from "fs";
 import stripJsonComments from "strip-json-comments";
 import { ModelTypes } from "../types";
 
+Error.stackTraceLimit = 50;
+process.env.DEBUG = 'true';
+
 function getNameAndType(funcDeclaration: MethodDeclaration) {
   const name = funcDeclaration.getName();
   const typeNode = funcDeclaration.getType();
@@ -198,154 +201,171 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
   });
 
   for (const statement of sourceFile.getStatements()) {
-    if (!Node.isExpressionStatement(statement)) continue;
+    try {
+      if (!Node.isExpressionStatement(statement)) continue;
 
-    const binaryExpr = statement.getChildAtIndexIfKind(0, SyntaxKind.BinaryExpression);
-    const callExpr = statement.getChildAtIndexIfKind(0, SyntaxKind.CallExpression);
-    if (binaryExpr) {
-      // left is a propertyaccessexpression, children are [identifier, dottoken, identifier]
-      const left = binaryExpr.getLeft();
-      const right = binaryExpr.getRight();
-      if (left.getKind() !== SyntaxKind.PropertyAccessExpression) continue;
-      if (
-        right.getKind() !== SyntaxKind.AsExpression &&
-        right.getKind() !== SyntaxKind.ObjectLiteralExpression &&
-        right.getKind() !== SyntaxKind.TypeAssertionExpression
-      )
-        continue;
+      const binaryExpr = statement.getChildAtIndexIfKind(0, SyntaxKind.BinaryExpression);
+      const callExpr = statement.getChildAtIndexIfKind(0, SyntaxKind.CallExpression);
+      if (binaryExpr) {
+        // left is a propertyaccessexpression, children are [identifier, dottoken, identifier]
+        const left = binaryExpr.getLeft();
+        const right = binaryExpr.getRight();
+        if (left.getKind() !== SyntaxKind.PropertyAccessExpression) continue;
+        if (
+          right.getKind() !== SyntaxKind.AsExpression &&
+          right.getKind() !== SyntaxKind.ObjectLiteralExpression &&
+          right.getKind() !== SyntaxKind.TypeAssertionExpression
+        )
+          continue;
 
-      const leftChildren = left.getChildren();
+        const leftChildren = left.getChildren();
 
-      let modelName: string;
-      const hasSchemaIdentifier = leftChildren.some(child => {
-        if (child.getKind() !== SyntaxKind.Identifier) return false;
+        let modelName: string;
+        const hasSchemaIdentifier = leftChildren.some(child => {
+          if (child.getKind() !== SyntaxKind.Identifier) return false;
 
-        modelName = schemaModelMapping[child.getText()];
-        if (!modelName) return false;
+          modelName = schemaModelMapping[child.getText()];
+          if (!modelName) return false;
 
-        return true;
-      });
+          return true;
+        });
 
-      const hasDotToken = leftChildren.some(child => child.getKind() === SyntaxKind.DotToken);
+        const hasDotToken = leftChildren.some(child => child.getKind() === SyntaxKind.DotToken);
 
-      if (!hasSchemaIdentifier || !hasDotToken) continue;
+        if (!hasSchemaIdentifier || !hasDotToken) continue;
 
-      const hasMethodsIdentifier = leftChildren.some(
-        child => child.getKind() === SyntaxKind.Identifier && child.getText() === "methods"
-      );
-      const hasStaticsIdentifier = leftChildren.some(
-        child => child.getKind() === SyntaxKind.Identifier && child.getText() === "statics"
-      );
-      const hasQueryIdentifier = leftChildren.some(
-        child => child.getKind() === SyntaxKind.Identifier && child.getText() === "query"
-      );
+        const hasMethodsIdentifier = leftChildren.some(
+          child => child.getKind() === SyntaxKind.Identifier && child.getText() === "methods"
+        );
+        const hasStaticsIdentifier = leftChildren.some(
+          child => child.getKind() === SyntaxKind.Identifier && child.getText() === "statics"
+        );
+        const hasQueryIdentifier = leftChildren.some(
+          child => child.getKind() === SyntaxKind.Identifier && child.getText() === "query"
+        );
 
-      let rightFuncDeclarations: any[] = [];
-      if (right.getKind() === SyntaxKind.ObjectLiteralExpression) {
-        rightFuncDeclarations = right.getChildrenOfKind(SyntaxKind.MethodDeclaration);
-      } else if (right.getKind() === SyntaxKind.AsExpression) {
-        const objLiteralExp = right.getFirstChildByKind(SyntaxKind.ObjectLiteralExpression);
-        if (objLiteralExp)
-          rightFuncDeclarations = objLiteralExp.getChildrenOfKind(SyntaxKind.MethodDeclaration);
-      } else if (right.getKind() === SyntaxKind.TypeAssertionExpression) {
-        const objLiteralExp = right.getFirstChildByKind(SyntaxKind.ObjectLiteralExpression);
-        if (objLiteralExp) {
-          rightFuncDeclarations = objLiteralExp.getChildrenOfKind(SyntaxKind.MethodDeclaration);
+        let rightFuncDeclarations: any[] = [];
+        if (right.getKind() === SyntaxKind.ObjectLiteralExpression) {
+          rightFuncDeclarations = right.getChildrenOfKind(SyntaxKind.MethodDeclaration);
+        } else if (right.getKind() === SyntaxKind.AsExpression) {
+          const objLiteralExp = right.getFirstChildByKind(SyntaxKind.ObjectLiteralExpression);
+          if (objLiteralExp)
+            rightFuncDeclarations = objLiteralExp.getChildrenOfKind(SyntaxKind.MethodDeclaration);
+        } else if (right.getKind() === SyntaxKind.TypeAssertionExpression) {
+          const objLiteralExp = right.getFirstChildByKind(SyntaxKind.ObjectLiteralExpression);
+          if (objLiteralExp) {
+            rightFuncDeclarations = objLiteralExp.getChildrenOfKind(SyntaxKind.MethodDeclaration);
+          }
+        } else {
+          rightFuncDeclarations = right.getChildrenOfKind(SyntaxKind.MethodDeclaration);
         }
-      } else {
-        rightFuncDeclarations = right.getChildrenOfKind(SyntaxKind.MethodDeclaration);
-      }
 
-      if (hasMethodsIdentifier) {
-        rightFuncDeclarations.forEach((declaration: MethodDeclaration) => {
-          const { name, type } = getNameAndType(declaration);
-          modelTypes[modelName].methods[name] = type;
-        });
-      } else if (hasStaticsIdentifier) {
-        rightFuncDeclarations.forEach((declaration: MethodDeclaration) => {
-          const { name, type } = getNameAndType(declaration);
-          modelTypes[modelName].statics[name] = type;
-        });
-      } else if (hasQueryIdentifier) {
-        rightFuncDeclarations.forEach((declaration: MethodDeclaration) => {
-          const { name, type } = getNameAndType(declaration);
-          modelTypes[modelName].query[name] = type;
-        });
-      }
-    } else if (callExpr) {
-      // virtual property
-      const setter = getVirtualSetter(callExpr);
-      const getter = getVirtualGetter(callExpr);
-      const firstAccessor =
-        (getter?.getPos() ?? Number.MAX_SAFE_INTEGER) <
-        (setter?.getPos() ?? Number.MAX_SAFE_INTEGER) ?
-          getter :
-          setter;
-      const propAccessExpr = firstAccessor
-        ?.getParent()
-        .getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
-
-      const schemaVariableName = propAccessExpr
-        ?.getFirstChildByKind(SyntaxKind.CallExpression)
-        ?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression)
-        ?.getFirstChildByKind(SyntaxKind.Identifier)
-        ?.getText();
-
-      if (schemaVariableName) {
-        if (process.env.DEBUG)
-          console.log("tsreader: Found virtual on schema: " + schemaVariableName);
-      } else continue;
-
-      const modelName = schemaModelMapping[schemaVariableName];
-      if (!modelName) {
-        if (process.env.DEBUG)
-          console.warn(
-            "tsreader: Associated model name not found for schema: " + schemaVariableName
-          );
-        continue;
-      }
-
-      const callExpr2 = propAccessExpr?.getFirstChildByKind(SyntaxKind.CallExpression);
-      const stringLiteral = callExpr2?.getArguments()[0];
-      const virtualName = stringLiteral?.getText();
-      if (!virtualName) {
-        if (process.env.DEBUG)
-          console.warn("tsreader: virtualName not found: ", {
-            virtualName
+        if (hasMethodsIdentifier) {
+          rightFuncDeclarations.forEach((declaration: MethodDeclaration) => {
+            const { name, type } = getNameAndType(declaration);
+            modelTypes[modelName].methods[name] = type;
           });
-        continue;
-      }
-
-      const virtualNameSanitized = virtualName.slice(1, virtualName.length - 1);
-      const virtuals = modelTypes[modelName].virtuals[virtualNameSanitized] || {};
-      if (!virtuals.getter) virtuals.getter = getter;
-      if (!virtuals.setter) virtuals.setter = setter;
-
-      const funcExpr = firstAccessor
-        ?.getParent()
-        ?.getFirstChildByKind(SyntaxKind.FunctionExpression);
-      const type = virtuals.getter?.getType()?.getText(funcExpr);
-
-      const propAccessExpr2 = callExpr2?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
-      if (propAccessExpr2?.getName() !== "virtual") continue;
-      let returnType = type?.split("=> ")?.[1];
-      if (!returnType) {
-        if (process.env.DEBUG)
-          console.warn("tsreader: returnType not found: ", {
-            returnType
+        } else if (hasStaticsIdentifier) {
+          rightFuncDeclarations.forEach((declaration: MethodDeclaration) => {
+            const { name, type } = getNameAndType(declaration);
+            modelTypes[modelName].statics[name] = type;
           });
+        } else if (hasQueryIdentifier) {
+          rightFuncDeclarations.forEach((declaration: MethodDeclaration) => {
+            const { name, type } = getNameAndType(declaration);
+            modelTypes[modelName].query[name] = type;
+          });
+        }
+      } else if (callExpr) {
+        // virtual property
+        const setter = getVirtualSetter(callExpr);
+        const getter = getVirtualGetter(callExpr);
+        const firstAccessor =
+          (getter?.getPos() ?? Number.MAX_SAFE_INTEGER) <
+          (setter?.getPos() ?? Number.MAX_SAFE_INTEGER) ?
+            getter :
+            setter;
+        const propAccessExpr = firstAccessor
+          ?.getParent()
+          .getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+
+        const schemaVariableName = propAccessExpr
+          ?.getFirstChildByKind(SyntaxKind.CallExpression)
+          ?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression)
+          ?.getFirstChildByKind(SyntaxKind.Identifier)
+          ?.getText();
+
+        if (schemaVariableName) {
+          if (process.env.DEBUG)
+            console.log("tsreader: Found virtual on schema: " + schemaVariableName);
+        } else continue;
+
+        const modelName = schemaModelMapping[schemaVariableName];
+        if (!modelName) {
+          if (process.env.DEBUG)
+            console.warn(
+              "tsreader: Associated model name not found for schema: " + schemaVariableName
+            );
+          continue;
+        }
+
+        const callExpr2 = propAccessExpr?.getFirstChildByKind(SyntaxKind.CallExpression);
+        const stringLiteral = callExpr2?.getArguments()[0];
+        const virtualName = stringLiteral?.getText();
+        if (!virtualName) {
+          if (process.env.DEBUG)
+            console.warn("tsreader: virtualName not found: ", {
+              virtualName
+            });
+          continue;
+        }
+
+        const virtualNameSanitized = virtualName.slice(1, virtualName.length - 1);
+        const virtuals = modelTypes[modelName].virtuals[virtualNameSanitized] || {};
+        if (!virtuals.getter) virtuals.getter = getter;
+        if (!virtuals.setter) virtuals.setter = setter;
+
+        const funcExpr = firstAccessor
+          ?.getParent()
+          ?.getFirstChildByKind(SyntaxKind.FunctionExpression);
+
+        const type = (() => {
+          try {
+            return virtuals.getter?.getType()?.getText(funcExpr);
+          } catch (err) {
+            // I don't yet know why or when this happens, but I want to ignore it for now
+            if (err instanceof Error && err.name === 'TypeError' && err.message === 'Cannot read property \'exports\' of undefined') {
+              return "=> unknown";
+            }
+            throw err;
+          }
+        })();
+
+          const propAccessExpr2 = callExpr2?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+        // console.log('WHATS THE NAME', propAccessExpr2?.getText(), 'with name', propAccessExpr2?.getName());
+        if (propAccessExpr2?.getName() !== "virtual") continue;
+        let returnType = type?.split("=> ")?.[1];
+        if (!returnType) {
+          if (process.env.DEBUG)
+            console.warn("tsreader: returnType not found: ", {
+              returnType
+            });
+          modelTypes[modelName].virtuals[virtualNameSanitized] = virtuals;
+          continue;
+        }
+
+        /**
+         * @experimental trying this out since certain virtual types are indeterminable and get set to void, which creates incorrect TS errors
+         * This should be a fine workaround because virtual properties shouldn't return solely `void`, they return real values.
+         */
+        if (returnType === "void") returnType = "unknown";
+        virtuals.returnType = returnType;
+
         modelTypes[modelName].virtuals[virtualNameSanitized] = virtuals;
-        continue;
       }
-
-      /**
-       * @experimental trying this out since certain virtual types are indeterminable and get set to void, which creates incorrect TS errors
-       * This should be a fine workaround because virtual properties shouldn't return solely `void`, they return real values.
-       */
-      if (returnType === "void") returnType = "unknown";
-      virtuals.returnType = returnType;
-
-      modelTypes[modelName].virtuals[virtualNameSanitized] = virtuals;
+    } catch (e) {
+      console.error('findTypesInFile', e, '\nfrom:', statement.getText());
+      continue
     }
   }
 
@@ -451,7 +471,7 @@ export const getModelTypes = (modelsPaths: string[], maxCommentDepth = 2): Model
   modelsPaths.forEach(modelPath => {
     const sourceFile = project.getSourceFileOrThrow(modelPath);
     let modelTypes = initModelTypes(sourceFile, modelPath);
-
+    console.log('IN', modelPath, sourceFile.getText().slice(0, 100), '\nwb', modelTypes);
     modelTypes = findPropertiesInFile(sourceFile, modelTypes);
     modelTypes = findTypesInFile(sourceFile, modelTypes);
     modelTypes = findCommentsInFile(sourceFile, modelTypes, maxCommentDepth);
