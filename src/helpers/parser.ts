@@ -3,7 +3,7 @@ import flatten, { unflatten } from "flat";
 import _ from "lodash";
 
 import * as templates from "./templates";
-import { MIGRATE_THIS_VIRTUAL_MANUALLY, MIGRATION_IS_NOT_DONE } from "../constants";
+import { MIGRATE_THIS_VIRTUAL_MANUALLY, MIGRATION_IS_NOT_DONE, THIS_PROPERTY_IS_TOO_DEEP } from "../constants";
 
 export const getShouldLeanIncludeVirtuals = (schema: any) => {
   // Check the toObject options to determine if virtual property should be included.
@@ -433,7 +433,8 @@ export const getParseKeyFn = (
   shouldLeanIncludeVirtuals: boolean,
   noMongoose: boolean,
   includeDecorators = false,
-  fromModel = false
+  fromModel = false,
+  depth = 0
 ) => {
   return (key: string, valOriginal: any): string => {
     // if the value is an object, we need to deepClone it to ensure changes to `val` aren't persisted in parent function
@@ -569,13 +570,16 @@ export const getParseKeyFn = (
       if (key === "_id") isOptional = false;
       const convertedType = convertBaseTypeToTs(key, val, isDocument, noMongoose);
 
+      if (depth > 15) {
+        valType = THIS_PROPERTY_IS_TOO_DEEP;
+      } else
       // TODO: we should detect nested types from unknown types and handle differently.
       // Currently, if we get an unknown type (ie not handled) then users run into a "max callstack exceeded error"
       if (convertedType === "{}") {
         const nestedSchema = _.cloneDeep(val);
         valType = "{\n";
 
-        const parseKey = getParseKeyFn(isDocument, shouldLeanIncludeVirtuals, noMongoose);
+        const parseKey = getParseKeyFn(isDocument, shouldLeanIncludeVirtuals, noMongoose, false, false, depth + 1);
         Object.keys(nestedSchema).forEach((key: string) => {
           valType += parseKey(key, nestedSchema[key]);
         });

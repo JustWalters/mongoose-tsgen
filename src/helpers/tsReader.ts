@@ -18,7 +18,7 @@ import stripJsonComments from "strip-json-comments";
 import { ModelTypes } from "../types";
 
 Error.stackTraceLimit = 50;
-process.env.DEBUG = 'true';
+process.env.DEBUG = 'false';
 
 function getNameAndType(funcDeclaration: MethodDeclaration) {
   const name = funcDeclaration.getName();
@@ -132,6 +132,7 @@ function getVirtualSetter(callExpr: CallExpression): FunctionExpression | undefi
   return funcExpr;
 }
 
+// TODO: This only works for functions written in line, not function references
 function getVirtualGetter(callExpr: CallExpression): FunctionExpression | undefined {
   let propAccessExpr = callExpr.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
 
