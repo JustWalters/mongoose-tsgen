@@ -402,7 +402,9 @@ const formatPropDecorator = ({
 }): string => {
   if (!nestDecorators) return "";
 
-  if (key === "_id") return "";
+  if (key === "_id" && options?.auto) {
+    return "";
+  }
 
   const inferrableTypes = ['string', 'number', 'boolean', 'Date', 'MongooseSchema.Types.ObjectId', 'mongoose.Types.ObjectId']
 
@@ -577,23 +579,27 @@ export const getParseKeyFn = (
       if (key === "_id") isOptional = false;
       const convertedType = convertBaseTypeToTs(key, val, isDocument, noMongoose);
 
-      if (depth > 15) {
+      if (depth > 5) {
         valType = THIS_PROPERTY_IS_TOO_DEEP;
       } else
       // TODO: we should detect nested types from unknown types and handle differently.
       // Currently, if we get an unknown type (ie not handled) then users run into a "max callstack exceeded error"
       if (convertedType === "{}") {
-        const nestedSchema = _.cloneDeep(val);
-        valType = "{\n";
+        if (val.name === "ObjectId" || val.name === "ObjectID") {
+          valType = 'mongoose.Types.ObjectId';
+        } else {
+          const nestedSchema = _.cloneDeep(val);
+          valType = "{\n";
 
-        const parseKey = getParseKeyFn(isDocument, shouldLeanIncludeVirtuals, noMongoose, false, false, depth + 1);
-        Object.keys(nestedSchema).forEach((key: string) => {
-          valType += parseKey(key, nestedSchema[key]);
-        });
+          const parseKey = getParseKeyFn(isDocument, shouldLeanIncludeVirtuals, noMongoose, false, false, depth + 1);
+          Object.keys(nestedSchema).forEach((key: string) => {
+            valType += parseKey(key, nestedSchema[key]);
+          });
 
-        valType += "}";
-        // JustinTODO: I don't know if we need the isOptional = false for our purposes. I don't fully understand it.
-        // isOptional = false;
+          valType += "}";
+          // JustinTODO: I don't know if we need the isOptional = false for our purposes. I don't fully understand it.
+          // isOptional = false;
+        }
       } else {
         valType = convertedType;
       }
