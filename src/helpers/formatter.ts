@@ -1,5 +1,6 @@
 import fs from "fs";
 import prettier from "prettier";
+import _ from "lodash";
 
 // I removed ESLINT usage since it doesnt seem to add much value and adds room for bugs.
 // If we want to re-add it, we need to add a check to ensure someone has an eslint config before linting files
@@ -32,3 +33,8 @@ export const format = async (filePaths: string[]) => {
   prettifyFiles(filePaths);
   // await fixFiles(filePaths);
 };
+
+
+export const pascalCase = (str: string) => {
+  return str.charAt(0).toUpperCase() + _.camelCase(str).slice(1);
+}

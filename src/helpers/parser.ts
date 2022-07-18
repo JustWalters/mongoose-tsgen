@@ -4,6 +4,7 @@ import _ from "lodash";
 
 import * as templates from "./templates";
 import { MIGRATE_THIS_VIRTUAL_MANUALLY, MIGRATION_IS_NOT_DONE, THIS_PROPERTY_IS_TOO_DEEP } from "../constants";
+import { pascalCase } from "./formatter";
 
 export const getShouldLeanIncludeVirtuals = (schema: any) => {
   // Check the toObject options to determine if virtual property should be included.
@@ -403,6 +404,8 @@ const formatPropDecorator = ({
 
   if (key === "_id") return "";
 
+  const inferrableTypes = ['string', 'number', 'boolean', 'Date', 'MongooseSchema.Types.ObjectId', 'mongoose.Types.ObjectId']
+
   const propOptions: any = _.pick(options, [
     "default",
     "required",
@@ -414,7 +417,10 @@ const formatPropDecorator = ({
     "match",
     "get",
   ]);
-  propOptions.type = valType;
+  if (!inferrableTypes.includes(valType)) {
+    propOptions.type = valType;
+  }
+
   if (options._default !== undefined && propOptions.default === undefined)
     propOptions.default = options._default;
 
@@ -633,7 +639,8 @@ export const parseSchema = ({
   footer = "",
   noMongoose = false,
   shouldLeanIncludeVirtuals,
-  shouldIncludeDecorators = false
+  shouldIncludeDecorators = false,
+  skipChildSchemas = false,
 }: {
   schema: any;
   modelName?: string;
@@ -643,6 +650,7 @@ export const parseSchema = ({
   noMongoose?: boolean;
   shouldLeanIncludeVirtuals: boolean;
   shouldIncludeDecorators?: boolean;
+  skipChildSchemas?: boolean;
 }) => {
   let template = "";
   const schema = _.cloneDeep(schemaOriginal);
@@ -749,6 +757,54 @@ export const loadSchemas = (modelsPaths: string[]) => {
     if (schemaCount === 0) {
       console.warn(
         `A module was found at ${singleModelPath}, but no new exported models were found. If this file contains a Mongoose schema, ensure it is exported and its name does not conflict with others.`
+      );
+    }
+  });
+
+  return schemas;
+};
+
+export const loadSchemasFromSchemaFiles = (schemasPaths: string[]) => {
+  const schemas: LoadedSchemas = {};
+
+  const registerSchema = (key: string, obj: any): boolean => {
+    if (!obj?.obj || !obj?.paths || !obj?.singleNestedPaths) return false;
+    schemas[pascalCase(key)] = obj;
+    return true;
+  };
+
+  schemasPaths.forEach((singleSchemaPath: string) => {
+    if (singleSchemaPath.includes('report.schema')) return;
+    let exportedData;
+    try {
+      exportedData = require(singleSchemaPath);
+    } catch (err) {
+      if ((err as Error).message?.includes(`Cannot find module '${singleSchemaPath}'`))
+        throw new Error(`Could not find a module at path ${singleSchemaPath}.`);
+      else throw err;
+    }
+
+    const prevSchemaCount = Object.keys(schemas).length;
+
+    // iterate through each exported property, check if val is a schema and add to schemas if so
+    for (const [key, obj] of Object.entries(exportedData)) {
+      if (key === 'default') {
+        let [,schemaName] = singleSchemaPath.match(/\/([A-Za-z0-9_-]+).schema.js/) || [];
+        if (schemaName) {
+          registerSchema(schemaName, obj);
+        } else {
+          if (process.env.DEBUG)
+            console.warn(`Could not find a schema name for default export in ${singleSchemaPath}`);
+        }
+      } else {
+        registerSchema(key, obj);
+      }
+    }
+
+    const schemaCount = Object.keys(schemas).length - prevSchemaCount;
+    if (schemaCount === 0) {
+      console.warn(
+        `A module was found at ${singleSchemaPath}, but no new exported models were found. If this file contains a Mongoose schema, ensure it is exported and its name does not conflict with others.`
       );
     }
   });

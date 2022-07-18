@@ -328,7 +328,8 @@ export const generateTypes = ({
   sourceFile,
   schemas,
   imports = [],
-  noMongoose
+  noMongoose,
+  topLevelOnly,
 }: {
   sourceFile: SourceFile;
   schemas: {
@@ -336,6 +337,7 @@ export const generateTypes = ({
   };
   imports?: string[];
   noMongoose?: boolean;
+  topLevelOnly?: boolean;
 }) => {
   const shouldIncludeDecorators = true;
   sourceFile.addStatements(writer => {
@@ -372,7 +374,8 @@ export const generateTypes = ({
         }`,
         noMongoose,
         shouldLeanIncludeVirtuals,
-        shouldIncludeDecorators
+        shouldIncludeDecorators,
+        skipChildSchemas: topLevelOnly,
       });
 
       writer.write(leanInterfaceStr).blankLine();
@@ -390,17 +393,19 @@ export const generateTypes = ({
       const mongooseDocExtend = `mongoose.Document<${_idType ?? "never"}, ${modelName}Queries>`;
 
       let documentInterfaceStr = "";
-      documentInterfaceStr += getSchemaTypes({ schema, modelName });
-      documentInterfaceStr += parser.parseSchema({
-        schema,
-        modelName,
-        isDocument: true,
-        header:
-          templates.getDocumentDocs(modelName) +
-          `\nexport type ${modelName}Document = ${mongooseDocExtend} & ${modelName}Methods & {\n`,
-        footer: "}",
-        shouldLeanIncludeVirtuals
-      });
+      if (!shouldIncludeDecorators) {
+        documentInterfaceStr += getSchemaTypes({ schema, modelName });
+        documentInterfaceStr += parser.parseSchema({
+          schema,
+          modelName,
+          isDocument: true,
+          header:
+            templates.getDocumentDocs(modelName) +
+            `\nexport type ${modelName}Document = ${mongooseDocExtend} & ${modelName}Methods & {\n`,
+          footer: "}",
+          shouldLeanIncludeVirtuals
+        });
+      }
 
       writer.write(documentInterfaceStr).blankLine();
     });

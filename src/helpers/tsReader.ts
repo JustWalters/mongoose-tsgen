@@ -13,12 +13,13 @@ import {
 } from "ts-morph";
 import glob from "glob";
 import path from "path";
+import _ from "lodash";
 import * as fs from "fs";
 import stripJsonComments from "strip-json-comments";
 import { ModelTypes } from "../types";
+import { pascalCase } from "./formatter";
 
 Error.stackTraceLimit = 50;
-process.env.DEBUG = 'false';
 
 function getNameAndType(funcDeclaration: MethodDeclaration) {
   const name = funcDeclaration.getName();
@@ -151,7 +152,7 @@ function getVirtualGetter(callExpr: CallExpression): FunctionExpression | undefi
   return funcExpr;
 }
 
-function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
+function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes, backupSchemaName: string = '') {
   const schemaModelMapping: {
     [schemaVariableName: string]: string;
   } = {};
@@ -162,22 +163,23 @@ function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
   });
 
   for (const statement of sourceFile.getStatements()) {
-    if (!Node.isVariableStatement(statement)) continue;
-    const potentialNewExpression = statement
+    const potentialNewExpression = Node.isVariableStatement(statement) ? statement
       .getDeclarationList()
       .getDeclarations()[0]
-      .getInitializerIfKind(SyntaxKind.NewExpression);
+      .getInitializerIfKind(SyntaxKind.NewExpression) : statement.getFirstChildByKind(SyntaxKind.NewExpression);
     if (!isSchemaConstructor(potentialNewExpression)) continue;
 
     const schemaDefinition = potentialNewExpression.getArguments()[0];
     if (!Node.isObjectLiteralExpression(schemaDefinition)) continue;
 
-    const schemaVariableName = statement.getDeclarationList().getDeclarations()[0].getName();
-    const modelName = schemaModelMapping[schemaVariableName];
+    const schemaVariableName = Node.isVariableStatement(statement) ? statement.getDeclarationList().getDeclarations()[0].getName() : backupSchemaName;
+    let modelName = schemaModelMapping[schemaVariableName];
 
     const properties = (schemaDefinition as ObjectLiteralExpression).getProperties();
-    // modelName is probably the name of a subschema
-    if (!modelTypes[modelName]) continue;
+    if (!modelTypes[modelName]) {
+      if (backupSchemaName) modelName = backupSchemaName;
+      else continue;
+    }
 
     properties.forEach(property => {
       if (Node.isPropertyAssignment(property) || Node.isShorthandPropertyAssignment(property)) {
@@ -342,7 +344,7 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
           }
         })();
 
-          const propAccessExpr2 = callExpr2?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
+        const propAccessExpr2 = callExpr2?.getFirstChildByKind(SyntaxKind.PropertyAccessExpression);
         // console.log('WHATS THE NAME', propAccessExpr2?.getText(), 'with name', propAccessExpr2?.getName());
         if (propAccessExpr2?.getName() !== "virtual") continue;
         let returnType = type?.split("=> ")?.[1];
@@ -398,6 +400,46 @@ const parseModelInitializer = (
 
   const [, modelName, schemaVariableName] = modelInitMatch;
   return { modelName, schemaVariableName };
+};
+
+const parseSchemaInitializer = (d: VariableDeclaration | ExportAssignment, filePath: string) => {
+  let exprStr = "";
+
+  const callExpr = d.getFirstChildByKind(SyntaxKind.CallExpression);
+  if (!callExpr) {
+    exprStr =
+      d
+        .getFirstChildByKind(SyntaxKind.NewExpression)
+        ?.getText()
+        .replace(/[\r\n\t ]/g, "") || "";
+  } else {
+    const callExprStr = callExpr.getText().replace(/[\r\n\t ]/g, "");
+    exprStr = callExprStr;
+  }
+
+  const pattern = /Schema\(/;
+  const schemaInitMatch = exprStr.match(pattern);
+  if (!schemaInitMatch) {
+    if (process.env.DEBUG) {
+      console.warn(
+        `tsreader: Could not find schema name in Mongoose schema initialization: ${exprStr}`
+      );
+    }
+    return undefined;
+  }
+
+  const [, fileName] = filePath.match(/\/([A-Za-z0-9_-]+).schema.js/) || [];
+  if (fileName) {
+    const schemaVariableName = pascalCase(fileName);
+    return { schemaVariableName, modelName: schemaVariableName };
+  }
+
+  if (process.env.DEBUG) {
+    console.warn(
+      `tsreader: Could not find schema name in Mongoose schema initialization in file: ${filePath}`
+    );
+  }
+  return undefined;
 };
 
 function initModelTypes(sourceFile: SourceFile, filePath: string) {
@@ -461,6 +503,67 @@ function initModelTypes(sourceFile: SourceFile, filePath: string) {
   return modelTypes;
 }
 
+function initSchemaTypes(sourceFile: SourceFile, filePath: string) {
+  if (process.env.DEBUG) console.log("tsreader: Searching file for Mongoose schemas: " + filePath);
+
+  const schemaTypes: ModelTypes = {};
+  const mongooseImport = sourceFile.getImportDeclaration("mongoose");
+
+  let isModelNamedImport = false;
+  mongooseImport?.getNamedImports().forEach((importSpecifier) => {
+    if (importSpecifier.getText() === "model") isModelNamedImport = true;
+  });
+
+  sourceFile.getVariableDeclarations().forEach((d) => {
+    if (!d.hasExportKeyword()) return;
+
+    const { modelName, schemaVariableName } = parseSchemaInitializer(d, filePath) ?? {};
+    if (!modelName || !schemaVariableName) return;
+
+    const modelVariableName = d.getName();
+
+    schemaTypes[modelName] = {
+      schemaVariableName,
+      modelVariableName,
+      filePath,
+      properties: {},
+      methods: {},
+      statics: {},
+      query: {},
+      virtuals: {},
+      comments: []
+    };
+  });
+
+  const defaultExportAssignment = sourceFile.getExportAssignment((d) => !d.isExportEquals());
+  if (defaultExportAssignment) {
+    const defaultModelInit = parseSchemaInitializer(defaultExportAssignment, filePath);
+    if (defaultModelInit) {
+      schemaTypes[defaultModelInit.modelName] = {
+        schemaVariableName: defaultModelInit.schemaVariableName,
+        filePath,
+        properties: {},
+        methods: {},
+        statics: {},
+        query: {},
+        virtuals: {},
+        comments: []
+      };
+    }
+  }
+
+  if (process.env.DEBUG) {
+    const schemaNames = Object.keys(schemaTypes);
+    if (schemaNames.length === 0)
+      console.warn(
+        `tsreader: No schema found in file. If a schema exists & is exported, it will still be typed but will use generic types for methods, statics, queries & virtuals`
+      );
+    else console.log("tsreader: Schemas found: " + schemaNames);
+  }
+
+  return schemaTypes;
+}
+
 export const getModelTypes = (modelsPaths: string[], maxCommentDepth = 2): ModelTypes => {
   const project = new Project({});
   project.addSourceFilesAtPaths(modelsPaths);
@@ -472,7 +575,7 @@ export const getModelTypes = (modelsPaths: string[], maxCommentDepth = 2): Model
   modelsPaths.forEach(modelPath => {
     const sourceFile = project.getSourceFileOrThrow(modelPath);
     let modelTypes = initModelTypes(sourceFile, modelPath);
-    console.log('IN', modelPath, sourceFile.getText().slice(0, 100), '\nwb', modelTypes);
+
     modelTypes = findPropertiesInFile(sourceFile, modelTypes);
     modelTypes = findTypesInFile(sourceFile, modelTypes);
     modelTypes = findCommentsInFile(sourceFile, modelTypes, maxCommentDepth);
@@ -484,6 +587,31 @@ export const getModelTypes = (modelsPaths: string[], maxCommentDepth = 2): Model
   });
   // console.log('ALL MODEL TYPES', allModelTypes);
   return allModelTypes;
+};
+
+export const getSchemaTypes = (schemasPaths: string[], maxCommentDepth = 2): ModelTypes => {
+  const project = new Project({});
+  project.addSourceFilesAtPaths(schemasPaths);
+
+  let allSchemaTypes: ModelTypes = {};
+
+  // TODO: ideally we only parse the files that we know have methods, statics, or virtuals.
+  // Would save a lot of time
+  schemasPaths.forEach((schemaPath) => {
+    const sourceFile = project.getSourceFileOrThrow(schemaPath);
+    let modelTypes = initSchemaTypes(sourceFile, schemaPath);
+
+    modelTypes = findPropertiesInFile(sourceFile, modelTypes, _.last(Object.keys(modelTypes)));
+    modelTypes = findTypesInFile(sourceFile, modelTypes);
+    modelTypes = findCommentsInFile(sourceFile, modelTypes, maxCommentDepth);
+
+    allSchemaTypes = {
+      ...allSchemaTypes,
+      ...modelTypes
+    };
+  });
+
+  return allSchemaTypes;
 };
 
 export const registerUserTs = (basePath: string): (() => void) | null => {

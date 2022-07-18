@@ -61,6 +61,44 @@ export const getModelsPaths = (basePath?: string): string[] => {
   return modelsPaths.map((filename: string) => path.join(process.cwd(), filename));
 };
 
+export const getSchemasPaths = (basePath?: string): string[] => {
+  let schemasPaths: string[];
+  if (basePath && basePath !== "") {
+    // base path, only check that path
+    const { ext } = path.parse(basePath);
+
+    // if path points to a folder, search for js files in folder.
+    const schemasFolderPath = ext === "" ? path.join(basePath, '**', "*.js") : basePath;
+
+    schemasPaths = glob.sync(schemasFolderPath, {
+      ignore: "**/node_modules/**"
+    });
+
+    if (schemasPaths.length === 0) {
+      throw new Error(`No schema files found found at path "${basePath}".`);
+    }
+
+    // Put any index files at the end of the array. This ensures that if an index.ts file re-exports schemas, the parser
+    // picks up the schemas from the individual files and not the index.ts file so that the tsReader will also pick them up properly
+    schemasPaths.sort((_a, b) => (b.endsWith("index.ts") ? -1 : 0));
+  } else {
+    // no base path, recursive search files in a `schemas/` folder
+    const schemasFolderPath = `**/schemas/!(index).ts`;
+
+    schemasPaths = glob.sync(schemasFolderPath, {
+      ignore: "**/node_modules/**"
+    });
+
+    if (schemasPaths.length === 0) {
+      throw new Error(
+        `Recursive search could not find any model files at "**/schemas/!(index).ts". Please provide a path to your models folder.`
+      );
+    }
+  }
+
+  return schemasPaths.filter(filename => !filename.endsWith('test.js')).map((filename: string) => path.join(process.cwd(), filename));
+};
+
 export const cleanOutputPath = (outputPath: string) => {
   const { dir, base, ext } = path.parse(outputPath);
 
