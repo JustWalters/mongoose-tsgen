@@ -408,6 +408,7 @@ const formatPropDecorator = ({
 
   const propOptions: any = _.pick(options, [
     "default",
+    "enum",
     "required",
     "ref",
     "trim",

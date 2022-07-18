@@ -442,6 +442,38 @@ const parseSchemaInitializer = (d: VariableDeclaration | ExportAssignment, fileP
   return undefined;
 };
 
+function getSchemaNaming(sourceFile: SourceFile, filePath: string): { modelName: string; schemaVariableName: string; modelVariableName?: string } | null {
+  for (const d of sourceFile.getVariableDeclarations()) {
+    if (!d.hasExportKeyword()) continue;
+
+    const { modelName, schemaVariableName } = parseSchemaInitializer(d, filePath) ?? {};
+    if (!modelName || !schemaVariableName) continue;
+
+    const modelVariableName = d.getName();
+    return { modelName, modelVariableName, schemaVariableName };
+  };
+
+  const defaultExportAssignment = sourceFile.getExportAssignment(d => !d.isExportEquals());
+  if (defaultExportAssignment) {
+    const defaultModelInit = parseSchemaInitializer(defaultExportAssignment, filePath);
+
+    if (defaultModelInit) {
+      return defaultModelInit
+    }
+
+    const exportIdentifier = defaultExportAssignment.getFirstChildByKind(SyntaxKind.Identifier);
+    for (const d of sourceFile.getVariableDeclarations()) {
+      if (d.getName() === exportIdentifier?.getText()) {
+        const { modelName, schemaVariableName } = parseSchemaInitializer(d, filePath) ?? {};
+        if (!modelName || !schemaVariableName) continue;
+        return { modelName, schemaVariableName };
+      }
+    }
+  }
+
+  return null;
+};
+
 function initModelTypes(sourceFile: SourceFile, filePath: string) {
   if (process.env.DEBUG) console.log("tsreader: Searching file for Mongoose schemas: " + filePath);
 
@@ -507,50 +539,23 @@ function initSchemaTypes(sourceFile: SourceFile, filePath: string) {
   if (process.env.DEBUG) console.log("tsreader: Searching file for Mongoose schemas: " + filePath);
 
   const schemaTypes: ModelTypes = {};
-  const mongooseImport = sourceFile.getImportDeclaration("mongoose");
 
-  let isModelNamedImport = false;
-  mongooseImport?.getNamedImports().forEach((importSpecifier) => {
-    if (importSpecifier.getText() === "model") isModelNamedImport = true;
-  });
+  const schemaNaming = getSchemaNaming(sourceFile, filePath);
+  if (!schemaNaming) return schemaTypes;
 
-  sourceFile.getVariableDeclarations().forEach((d) => {
-    if (!d.hasExportKeyword()) return;
+  const { modelVariableName, modelName, schemaVariableName } = schemaNaming;
 
-    const { modelName, schemaVariableName } = parseSchemaInitializer(d, filePath) ?? {};
-    if (!modelName || !schemaVariableName) return;
-
-    const modelVariableName = d.getName();
-
-    schemaTypes[modelName] = {
-      schemaVariableName,
-      modelVariableName,
-      filePath,
-      properties: {},
-      methods: {},
-      statics: {},
-      query: {},
-      virtuals: {},
-      comments: []
-    };
-  });
-
-  const defaultExportAssignment = sourceFile.getExportAssignment((d) => !d.isExportEquals());
-  if (defaultExportAssignment) {
-    const defaultModelInit = parseSchemaInitializer(defaultExportAssignment, filePath);
-    if (defaultModelInit) {
-      schemaTypes[defaultModelInit.modelName] = {
-        schemaVariableName: defaultModelInit.schemaVariableName,
-        filePath,
-        properties: {},
-        methods: {},
-        statics: {},
-        query: {},
-        virtuals: {},
-        comments: []
-      };
-    }
-  }
+  schemaTypes[modelName] = {
+    schemaVariableName,
+    modelVariableName,
+    filePath,
+    properties: {},
+    methods: {},
+    statics: {},
+    query: {},
+    virtuals: {},
+    comments: []
+  };
 
   if (process.env.DEBUG) {
     const schemaNames = Object.keys(schemaTypes);

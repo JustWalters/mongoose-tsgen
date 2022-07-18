@@ -66,6 +66,30 @@ export const replaceModelTypes = (
                 }
               });
             }
+          } else if (decoratorArg && Node.isObjectLiteralExpression(decoratorArg)) {
+            decoratorArg.getProperties().forEach(property => {
+              if (
+                Node.isPropertyAssignment(property) ||
+                Node.isShorthandPropertyAssignment(property)
+              ) {
+                const propertyName = property.getName().slice(1, -1);
+                const sourceValue = properties[prop.getName()];
+
+                if (Node.isObjectLiteralExpression(sourceValue)) {
+                  sourceValue.getProperties().forEach(propertyAttribute => {
+                    if (Node.isPropertyAssignment(propertyAttribute) ||
+                    Node.isShorthandPropertyAssignment(propertyAttribute)) {
+                      const attributeValue = propertyAttribute.getInitializer();
+
+                      if (Node.isExpression(attributeValue) && propertyName === propertyAttribute.getName()) {
+                        const newValue = attributeValue.getText();
+                        property.setInitializer(newValue);
+                      }
+                    }
+                  });
+                }
+              }
+            });
           }
         });
     }

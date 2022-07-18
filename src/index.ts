@@ -1,5 +1,6 @@
 import { Command, flags } from "@oclif/command";
 import cli from "cli-ux";
+import path from 'path';
 
 import * as parser from "./helpers/parser";
 import * as tsReader from "./helpers/tsReader";
@@ -83,51 +84,57 @@ class MongooseTsgen extends Command {
     };
   }
 
+  private async migrateSchema(genFileFolder: string, schemaPath: string,) {
+    const { flags, args } = this.getConfig();
+    const baseModelPath = path.resolve(process.cwd(), args.model_path)
+    const schemaSpecificPath = schemaPath.replace(`${baseModelPath}/`, '')
+    const genFilePath = path.join(genFileFolder, schemaSpecificPath);
+
+    const schemas = parser.loadSchemasFromSchemaFiles([schemaPath]);
+
+    // console.log("SCHEMAS", schemaPath, Object.keys(schemas));
+    let sourceFile = generator.createSourceFile(genFilePath);
+
+    const noMongoose = flags["no-mongoose"];
+    sourceFile = generator.generateTypes({
+      schemas,
+      sourceFile,
+      imports: flags.imports,
+      noMongoose,
+      topLevelOnly: true
+    });
+
+    const schemaTypes = tsReader.getSchemaTypes([schemaPath]);
+    console.log("STYPES", schemaTypes);
+    generator.replaceModelTypes(sourceFile, schemaTypes, schemas);
+
+    this.log(`Writing interfaces to ${genFilePath}`);
+
+    generator.saveFile({ genFilePath, sourceFile });
+
+    if (!flags["no-format"]) await formatter.format([genFilePath]);
+  }
+
   async migrateSchemas() {
     const { flags, args } = this.getConfig();
     try {
-        cli.action.start("Generating mongoose typescript definitions");
+      cli.action.start("Generating mongoose typescript definitions");
 
-        const schemasPaths = paths.getSchemasPaths(args.model_path);
+      const cleanupTs = tsReader.registerUserTs(flags.project);
+      const schemasPaths = paths.getSchemasPaths(args.model_path).filter(sp => sp.includes('cap-rate.'));
+      console.log("PATHS", schemasPaths);
+      const genFilePath = paths.cleanOutputPath(flags.output);
+      const genFileFolder = path.dirname(genFilePath);
+      schemasPaths.forEach(async (schemaPath) => {
+        this.migrateSchema(genFileFolder, schemaPath);
+      });
 
-        const cleanupTs = tsReader.registerUserTs(flags.project);
+      cleanupTs?.();
 
-        const schemas = parser.loadSchemasFromSchemaFiles(schemasPaths);
-
-        console.log('SCHEMAS', schemasPaths, Object.keys(schemas));
-        const genFilePath = paths.cleanOutputPath(flags.output);
-        let sourceFile = generator.createSourceFile(genFilePath);
-
-        const noMongoose = flags["no-mongoose"];
-        sourceFile = generator.generateTypes({
-          schemas,
-          sourceFile,
-          imports: flags.imports,
-          noMongoose,
-          topLevelOnly: true,
-        });
-
-        const schemaTypes = tsReader.getSchemaTypes(schemasPaths);
-        console.log('STYPES', schemaTypes);
-        generator.replaceModelTypes(sourceFile, schemaTypes, schemas); 
-  
-        cleanupTs?.();
-
-        cli.action.stop();
-        if (flags["dry-run"]) {
-          this.log("Dry run detected, generated interfaces will be printed to console:\n");
-          this.log(sourceFile.getFullText());
-        } else {
-          this.log(`Writing interfaces to ${genFilePath}`);
-  
-          generator.saveFile({ genFilePath, sourceFile });
-  
-          if (!flags["no-format"]) await formatter.format([genFilePath]);
-          this.log("Writing complete 🐒");
-          process.exit();
-        }
+      this.log("Writing complete 🐒");
+      process.exit();
     } catch (error) {
-      console.error('ERROR:', error)
+      console.error("ERROR:", error);
       this.error(error as Error, { exit: 1 });
     }
   }
@@ -140,7 +147,7 @@ class MongooseTsgen extends Command {
       process.env.DEBUG = "1";
     }
 
-    if ('flags.migrate-schemas') {
+    if ("flags.migrate-schemas") {
       return this.migrateSchemas();
     }
 
@@ -195,7 +202,7 @@ class MongooseTsgen extends Command {
         process.exit();
       }
     } catch (error) {
-      console.error('ERROR:', error)
+      console.error("ERROR:", error);
       this.error(error as Error, { exit: 1 });
     }
   }
