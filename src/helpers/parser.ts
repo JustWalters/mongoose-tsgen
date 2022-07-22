@@ -378,7 +378,7 @@ const formatPropOptions = (options: object) => {
         const isAPopulatableField = match.includes('[\\"_id\\"]');
         if (isAPopulatableField) return '"type":mongoose.Types.ObjectId';
 
-        return `"type":String,"enum":[${valType.replace(/ \|/g, ",")}]`.replace(/\\"/g, '"');
+        return `"type":String`;
       })
       // The below types omit "type:" to allow for arrays
       .replace("string", "String")
