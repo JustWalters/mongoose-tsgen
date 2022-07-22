@@ -391,7 +391,7 @@ export const generateTypes = ({
           templates.getLeanDocs(modelName) +
           `\n${
             shouldIncludeDecorators && `@Schema(${parser.getSchemaOptions(schema)})\n`
-          }export class ${modelName} extends mongoose.Types.Document {\n`,
+          }export class ${modelName} extends mongoose.Types.${topLevelOnly ? 'Subdocument' : 'Document'} {\n`,
         footer: `}${
           shouldIncludeDecorators &&
           `\n\nexport const ${modelName}Schema = SchemaFactory.createForClass(${modelName});\n`

@@ -87,7 +87,9 @@ class MongooseTsgen extends Command {
   private async migrateSchema(genFileFolder: string, schemaPath: string,) {
     const { flags, args } = this.getConfig();
     const baseModelPath = path.resolve(process.cwd(), args.model_path)
-    const schemaSpecificPath = schemaPath.replace(`${baseModelPath}/`, '')
+    const schemaSpecificPath = schemaPath
+      .replace(`${path.dirname(baseModelPath)}/`, '')
+      .replace(/\.js$/, '.ts');
     const genFilePath = path.join(genFileFolder, schemaSpecificPath);
 
     const schemas = parser.loadSchemasFromSchemaFiles([schemaPath]);
@@ -121,13 +123,14 @@ class MongooseTsgen extends Command {
       cli.action.start("Generating mongoose typescript definitions");
 
       const cleanupTs = tsReader.registerUserTs(flags.project);
-      const schemasPaths = paths.getSchemasPaths(args.model_path).filter(sp => sp.includes('cap-rate.'));
+      const schemasPaths = paths.getSchemasPaths(args.model_path);
       console.log("PATHS", schemasPaths);
       const genFilePath = paths.cleanOutputPath(flags.output);
       const genFileFolder = path.dirname(genFilePath);
-      schemasPaths.forEach(async (schemaPath) => {
-        this.migrateSchema(genFileFolder, schemaPath);
-      });
+     
+      await Promise.all(schemasPaths.map((schemaPath) => {
+        return this.migrateSchema(genFileFolder, schemaPath);
+      }));
 
       cleanupTs?.();
 
