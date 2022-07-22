@@ -152,14 +152,14 @@ export const convertBaseTypeToTs = (
   switch (mongooseType) {
     case String:
     case "String":
-      if (val.enum?.length > 0) {
-        const includesNull = val.enum.includes(null);
-        const enumValues = val.enum.filter((str: string) => str !== null);
-        let enumString = `"` + enumValues.join(`" | "`) + `"`;
-        if (includesNull) enumString += ` | null`;
+      // if (val.enum?.length > 0) {
+      //   const includesNull = val.enum.includes(null);
+      //   const enumValues = val.enum.filter((str: string) => str !== null);
+      //   let enumString = `"` + enumValues.join(`" | "`) + `"`;
+      //   if (includesNull) enumString += ` | null`;
 
-        return enumString;
-      }
+      //   return enumString;
+      // }
 
       return "string";
     case Number:
