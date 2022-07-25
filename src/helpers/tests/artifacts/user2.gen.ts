@@ -7,6 +7,9 @@
 
 import mongoose from "mongoose";
 
+import { Prop, Schema } from '@nestjs/mongoose';
+import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
+
 /**
  * Lean version of User2AddressDocument
  * 
@@ -15,9 +18,13 @@ import mongoose from "mongoose";
  * const user2Object = user2.toObject();
  * ```
  */
-export type User2Address = {
+@Schema({"_id":false})
+export class User2Address extends mongoose.Types.Subdocument {
+@Prop({"required":true,"type":String})
 city: string;
 }
+
+export const User2AddressSchema = SchemaFactory.createForClass(User2Address);
 
 /**
  * Lean version of User2Document
@@ -27,13 +34,20 @@ city: string;
  * const user2Object = user2.toObject();
  * ```
  */
-export type User2 = {
+@Schema({"timestamps":true})
+export class User2 extends mongoose.Types.Document {
 _id: number;
+@Prop({"type":Date})
 lastOnlineAt?: Date;
+@Prop({"type":Date})
 updatedAt?: Date;
+@Prop({"type":Date})
 createdAt?: Date;
+@Prop({"required":true,"type":User2AddressSchema})
 address: User2Address;
 }
+
+export const User2Schema = SchemaFactory.createForClass(User2);
 
 /**
  * Lean version of User2Document (type alias of `User2`)

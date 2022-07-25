@@ -1,5 +1,6 @@
 import { Command, flags } from "@oclif/command";
 import cli from "cli-ux";
+import path from 'path';
 
 import * as parser from "./helpers/parser";
 import * as tsReader from "./helpers/tsReader";
@@ -83,12 +84,74 @@ class MongooseTsgen extends Command {
     };
   }
 
+  private async migrateSchema(genFileFolder: string, schemaPath: string,) {
+    const { flags, args } = this.getConfig();
+    const baseModelPath = path.resolve(process.cwd(), args.model_path)
+    const schemaSpecificPath = schemaPath
+      .replace(`${path.dirname(baseModelPath)}/`, '')
+      .replace(/\.js$/, '.ts');
+    const genFilePath = path.join(genFileFolder, schemaSpecificPath);
+
+    const schemas = parser.loadSchemasFromSchemaFiles([schemaPath]);
+
+    // console.log("SCHEMAS", schemaPath, Object.keys(schemas));
+    let sourceFile = generator.createSourceFile(genFilePath);
+
+    const noMongoose = flags["no-mongoose"];
+    sourceFile = generator.generateTypes({
+      schemas,
+      sourceFile,
+      imports: flags.imports,
+      noMongoose,
+      topLevelOnly: true
+    });
+
+    const schemaTypes = tsReader.getSchemaTypes([schemaPath]);
+    console.log("STYPES", schemaTypes);
+    generator.replaceModelTypes(sourceFile, schemaTypes, schemas);
+
+    this.log(`Writing interfaces to ${genFilePath}`);
+
+    generator.saveFile({ genFilePath, sourceFile });
+
+    if (!flags["no-format"]) await formatter.format([genFilePath]);
+  }
+
+  async migrateSchemas() {
+    const { flags, args } = this.getConfig();
+    try {
+      cli.action.start("Generating mongoose typescript definitions");
+
+      const cleanupTs = tsReader.registerUserTs(flags.project);
+      const schemasPaths = paths.getSchemasPaths(args.model_path);
+      console.log("PATHS", schemasPaths);
+      const genFilePath = paths.cleanOutputPath(flags.output);
+      const genFileFolder = path.dirname(genFilePath);
+     
+      await Promise.all(schemasPaths.map((schemaPath) => {
+        return this.migrateSchema(genFileFolder, schemaPath);
+      }));
+
+      cleanupTs?.();
+
+      this.log("Writing complete 🐒");
+      process.exit();
+    } catch (error) {
+      console.error("ERROR:", error);
+      this.error(error as Error, { exit: 1 });
+    }
+  }
+
   async run() {
     const { flags, args } = this.getConfig();
 
     if (flags.debug) {
       this.log("Debug mode enabled");
       process.env.DEBUG = "1";
+    }
+
+    if ("flags.migrate-schemas") {
+      return this.migrateSchemas();
     }
 
     cli.action.start("Generating mongoose typescript definitions");
@@ -142,6 +205,7 @@ class MongooseTsgen extends Command {
         process.exit();
       }
     } catch (error) {
+      console.error("ERROR:", error);
       this.error(error as Error, { exit: 1 });
     }
   }

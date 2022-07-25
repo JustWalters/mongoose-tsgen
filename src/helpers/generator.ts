@@ -1,8 +1,17 @@
-import { Project, SourceFile, SyntaxKind, PropertySignature } from "ts-morph";
+import {
+  Node,
+  Project,
+  SourceFile,
+  SyntaxKind,
+  PropertySignature,
+  PropertyDeclaration,
+  StructureKind
+} from "ts-morph";
 import mongoose from "mongoose";
 import * as parser from "./parser";
 import * as templates from "./templates";
 import { ModelTypes } from "../types";
+import { MIGRATION_IS_NOT_DONE } from "../constants";
 
 // this strips comments of special tokens since ts-morph generates jsdoc tokens automatically
 const cleanComment = (comment: string) => {
@@ -20,7 +29,70 @@ export const replaceModelTypes = (
   }
 ) => {
   Object.entries(modelTypes).forEach(([modelName, types]) => {
-    const { methods, statics, query, virtuals, comments } = types;
+    const { properties, methods, statics, query, virtuals, comments } = types;
+
+    // properties
+    if (properties && Object.keys(properties).length > 0) {
+      sourceFile
+        ?.getClass(modelName)
+        ?.getChildrenOfKind(SyntaxKind.PropertyDeclaration)
+        .forEach(prop => {
+          const decoratorArg = prop.getDecorator("Prop")?.getArguments()[0];
+          if (decoratorArg && decoratorArg.getText().includes(MIGRATION_IS_NOT_DONE)) {
+            if (Node.isObjectLiteralExpression(decoratorArg)) {
+              decoratorArg.getProperties().forEach(property => {
+                if (
+                  Node.isPropertyAssignment(property) ||
+                  Node.isShorthandPropertyAssignment(property)
+                ) {
+                  const propertyName = property.getName();
+                  const propertyValue = property.getInitializer()?.getText();
+
+                  if (propertyValue?.includes(MIGRATION_IS_NOT_DONE)) {
+                    const newType = properties[prop.getName()];
+
+                    if (Node.isObjectLiteralExpression(newType)) {
+                      const propertyFromSource = newType.getProperty(propertyName.slice(1, -1));
+                      if (
+                        Node.isPropertyAssignment(propertyFromSource) ||
+                        Node.isShorthandPropertyAssignment(propertyFromSource)
+                      ) {
+                        const newInitializer = propertyFromSource.getInitializer();
+
+                        property.setInitializer(newInitializer?.getText() || "");
+                      }
+                    }
+                  }
+                }
+              });
+            }
+          } else if (decoratorArg && Node.isObjectLiteralExpression(decoratorArg)) {
+            decoratorArg.getProperties().forEach(property => {
+              if (
+                Node.isPropertyAssignment(property) ||
+                Node.isShorthandPropertyAssignment(property)
+              ) {
+                const propertyName = property.getName().slice(1, -1);
+                const sourceValue = properties[prop.getName()];
+
+                if (Node.isObjectLiteralExpression(sourceValue)) {
+                  sourceValue.getProperties().forEach(propertyAttribute => {
+                    if (Node.isPropertyAssignment(propertyAttribute) ||
+                    Node.isShorthandPropertyAssignment(propertyAttribute)) {
+                      const attributeValue = propertyAttribute.getInitializer();
+
+                      if (Node.isExpression(attributeValue) && propertyName === propertyAttribute.getName()) {
+                        const newValue = attributeValue.getText();
+                        property.setInitializer(newValue);
+                      }
+                    }
+                  });
+                }
+              }
+            });
+          }
+        });
+    }
 
     // methods
     if (Object.keys(methods).length > 0) {
@@ -69,25 +141,28 @@ export const replaceModelTypes = (
 
     // virtuals
     const virtualNames = Object.keys(virtuals);
-    if (virtualNames.length > 0) {
+    if (virtualNames && virtualNames.length > 0) {
+      const theClass = sourceFile?.getClass(modelName);
       const documentProperties = sourceFile
         ?.getTypeAlias(`${modelName}Document`)
         ?.getFirstChildByKind(SyntaxKind.IntersectionType)
         ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
         ?.getChildrenOfKind(SyntaxKind.PropertySignature);
 
-      const leanProperties =
+      // TODO: JW - This isn't quite right. Should be PropertyDeclaration[] | PropertySignature[]. But then .find is a problem. IDKY
+      const leanProperties: false | undefined | (PropertyDeclaration | PropertySignature)[] =
         parser.getShouldLeanIncludeVirtuals(schemas[modelName]) &&
-        sourceFile
+        (sourceFile
           ?.getTypeAlias(`${modelName}`)
           ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
-          ?.getChildrenOfKind(SyntaxKind.PropertySignature);
+          ?.getChildrenOfKind(SyntaxKind.PropertySignature) ||
+          theClass?.getChildrenOfKind(SyntaxKind.PropertyDeclaration));
 
       if (documentProperties || leanProperties) {
         virtualNames.forEach(virtualName => {
           const virtualNameComponents = virtualName.split(".");
           let nestedDocProps: PropertySignature[] | undefined;
-          let nestedLeanProps: PropertySignature[] | undefined;
+          let nestedLeanProps: PropertyDeclaration[] | PropertySignature[] | undefined;
 
           virtualNameComponents.forEach((nameComponent, i) => {
             if (i === virtualNameComponents.length - 1) {
@@ -95,13 +170,53 @@ export const replaceModelTypes = (
                 const docPropMatch = (nestedDocProps ?? documentProperties).find(
                   prop => prop.getName() === nameComponent
                 );
-                docPropMatch?.setType(virtuals[virtualName]);
+                if (virtuals[virtualName].returnType)
+                  docPropMatch?.setType(virtuals[virtualName].returnType);
+
+                if (virtuals[virtualName].getter)
+                  theClass?.addGetAccessor({
+                    kind: StructureKind.GetAccessor,
+                    name: `"${virtualName}"`,
+                    returnType: virtuals[virtualName].returnType,
+                    // JustinTODO: Would it be better to map it to StatementStructures somehow?
+                    statements: (virtuals[virtualName].getter?.getStatements() || []).map(s =>
+                      s.getText()
+                    )
+                  });
+
+                if (virtuals[virtualName].setter)
+                  theClass?.addSetAccessor({
+                    kind: StructureKind.SetAccessor,
+                    name: `"${virtualName}"`,
+                    parameters: [
+                      {
+                        kind: StructureKind.Parameter,
+                        name: virtuals[virtualName].setter?.getParameters()[0]?.getName() || "",
+                        type:
+                          virtuals[virtualName].setter
+                            ?.getParameters()[0]
+                            ?.getType()
+                            .getText(virtuals[virtualName].setter?.getParameters()[0]) || ""
+                      }
+                    ],
+                    statements: virtuals[virtualName].setter
+                      ?.getStatementsWithComments()
+                      .map(s => s.getText())
+                  });
               }
               if (leanProperties) {
                 const leanPropMatch = (nestedLeanProps ?? leanProperties).find(
                   prop => prop.getName() === nameComponent
                 );
-                leanPropMatch?.setType(virtuals[virtualName]);
+
+                if (virtuals[virtualName].returnType)
+                  leanPropMatch?.setType(virtuals[virtualName].returnType);
+                if (leanPropMatch?.getKind() === SyntaxKind.PropertyDeclaration) {
+                  const propertyDeclaration = leanPropMatch as PropertyDeclaration;
+                  propertyDeclaration.getDecorators().forEach(decorator => {
+                    decorator.remove();
+                  });
+                }
               }
 
               return;
@@ -125,22 +240,27 @@ export const replaceModelTypes = (
     }
 
     // TODO: this section is almost identical to the virtual property section above, refactor
-    if (comments.length > 0) {
+    if (comments && comments.length > 0) {
       const documentProperties = sourceFile
         ?.getTypeAlias(`${modelName}Document`)
         ?.getFirstChildByKind(SyntaxKind.IntersectionType)
         ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
         ?.getChildrenOfKind(SyntaxKind.PropertySignature);
 
-      const leanProperties = sourceFile
-        ?.getTypeAlias(`${modelName}`)
-        ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
-        ?.getChildrenOfKind(SyntaxKind.PropertySignature);
+      const leanProperties =
+        sourceFile
+          ?.getTypeAlias(`${modelName}`)
+          ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
+          ?.getChildrenOfKind(SyntaxKind.PropertySignature) ||
+        sourceFile?.getClass(`${modelName}`)?.getChildrenOfKind(SyntaxKind.PropertyDeclaration);
 
       comments.forEach(({ path, comment }) => {
         const pathComponents = path.split(".");
         let nestedDocProps: PropertySignature[] | undefined;
-        let nestedLeanProps: PropertySignature[] | undefined;
+        // TODO: JW - What's the proper shared type here?
+        let nestedLeanProps:
+          | Pick<PropertySignature, "getName" | "addJsDoc" | "getFirstChildByKind">[]
+          | undefined;
 
         pathComponents.forEach((nameComponent, i) => {
           if (i === pathComponents.length - 1) {
@@ -232,7 +352,8 @@ export const generateTypes = ({
   sourceFile,
   schemas,
   imports = [],
-  noMongoose
+  noMongoose,
+  topLevelOnly,
 }: {
   sourceFile: SourceFile;
   schemas: {
@@ -240,14 +361,17 @@ export const generateTypes = ({
   };
   imports?: string[];
   noMongoose?: boolean;
+  topLevelOnly?: boolean;
 }) => {
+  const shouldIncludeDecorators = true;
   sourceFile.addStatements(writer => {
     writer.write(templates.MAIN_HEADER).blankLine();
     // mongoose import
     if (!noMongoose) writer.write(templates.MONGOOSE_IMPORT);
+    if (shouldIncludeDecorators) writer.blankLine().write(templates.NEST_JS_IMPORT);
 
     // custom, user-defined imports
-    if (imports.length > 0) writer.write(imports.join("\n"));
+    if (imports && imports.length > 0) writer.write(imports.join("\n"));
 
     writer.blankLine();
     // writer.write("if (true)").block(() => {
@@ -257,16 +381,25 @@ export const generateTypes = ({
     Object.keys(schemas).forEach(modelName => {
       const schema = schemas[modelName];
 
-      const shouldLeanIncludeVirtuals = parser.getShouldLeanIncludeVirtuals(schema);
+      const shouldLeanIncludeVirtuals = true; // parser.getShouldLeanIncludeVirtuals(schema);
       // passing modelName causes childSchemas to be processed
       const leanInterfaceStr = parser.parseSchema({
         schema,
         modelName,
         isDocument: false,
-        header: templates.getLeanDocs(modelName) + `\nexport type ${modelName} = {\n`,
-        footer: "}",
+        header:
+          templates.getLeanDocs(modelName) +
+          `\n${
+            shouldIncludeDecorators && `@Schema(${parser.getSchemaOptions(schema)})\n`
+          }export class ${modelName} extends mongoose.Types.${topLevelOnly ? 'Subdocument' : 'Document'} {\n`,
+        footer: `}${
+          shouldIncludeDecorators &&
+          `\n\nexport const ${modelName}Schema = SchemaFactory.createForClass(${modelName});\n`
+        }`,
         noMongoose,
-        shouldLeanIncludeVirtuals
+        shouldLeanIncludeVirtuals,
+        shouldIncludeDecorators,
+        skipChildSchemas: topLevelOnly,
       });
 
       writer.write(leanInterfaceStr).blankLine();
@@ -284,17 +417,19 @@ export const generateTypes = ({
       const mongooseDocExtend = `mongoose.Document<${_idType ?? "never"}, ${modelName}Queries>`;
 
       let documentInterfaceStr = "";
-      documentInterfaceStr += getSchemaTypes({ schema, modelName });
-      documentInterfaceStr += parser.parseSchema({
-        schema,
-        modelName,
-        isDocument: true,
-        header:
-          templates.getDocumentDocs(modelName) +
-          `\nexport type ${modelName}Document = ${mongooseDocExtend} & ${modelName}Methods & {\n`,
-        footer: "}",
-        shouldLeanIncludeVirtuals
-      });
+      if (!shouldIncludeDecorators) {
+        documentInterfaceStr += getSchemaTypes({ schema, modelName });
+        documentInterfaceStr += parser.parseSchema({
+          schema,
+          modelName,
+          isDocument: true,
+          header:
+            templates.getDocumentDocs(modelName) +
+            `\nexport type ${modelName}Document = ${mongooseDocExtend} & ${modelName}Methods & {\n`,
+          footer: "}",
+          shouldLeanIncludeVirtuals
+        });
+      }
 
       writer.write(documentInterfaceStr).blankLine();
     });

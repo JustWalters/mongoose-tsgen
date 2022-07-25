@@ -7,6 +7,9 @@
 
 import mongoose from "mongoose";
 
+import { Prop, Schema } from '@nestjs/mongoose';
+import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
+
 /**
  * Lean version of HomeDocument
  * 
@@ -15,10 +18,15 @@ import mongoose from "mongoose";
  * const homeObject = home.toObject();
  * ```
  */
-export type Home = {
+@Schema({"_id":false})
+export class Home extends mongoose.Types.Document {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const HomeSchema = SchemaFactory.createForClass(Home);
 
 /**
  * Lean version of HomeDocument (type alias of `Home`)
@@ -96,10 +104,15 @@ status: string;
  * const deviceObject = device.toObject();
  * ```
  */
-export type DeviceHome = {
+@Schema({"_id":false})
+export class DeviceHome extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const DeviceHomeSchema = SchemaFactory.createForClass(DeviceHome);
 
 /**
  * Lean version of DeviceDocument
@@ -109,11 +122,16 @@ homeName?: string;
  * const deviceObject = device.toObject();
  * ```
  */
-export type Device = {
+@Schema()
+export class Device extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop({"type":DeviceHomeSchema})
 home?: DeviceHome;
 }
+
+export const DeviceSchema = SchemaFactory.createForClass(Device);
 
 /**
  * Lean version of DeviceDocument (type alias of `Device`)
@@ -207,10 +225,15 @@ home?: DeviceHomeDocument;
  * const device2Object = device2.toObject();
  * ```
  */
-export type Device2Home = {
+@Schema({"_id":false})
+export class Device2Home extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const Device2HomeSchema = SchemaFactory.createForClass(Device2Home);
 
 /**
  * Lean version of Device2Document
@@ -220,11 +243,16 @@ homeName?: string;
  * const device2Object = device2.toObject();
  * ```
  */
-export type Device2 = {
+@Schema()
+export class Device2 extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop({"type":Device2HomeSchema})
 home?: Device2Home;
 }
+
+export const Device2Schema = SchemaFactory.createForClass(Device2);
 
 /**
  * Lean version of Device2Document (type alias of `Device2`)
@@ -318,10 +346,15 @@ home?: Device2HomeDocument;
  * const device3Object = device3.toObject();
  * ```
  */
-export type Device3Home = {
+@Schema({"_id":false})
+export class Device3Home extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const Device3HomeSchema = SchemaFactory.createForClass(Device3Home);
 
 /**
  * Lean version of Device3Document
@@ -331,11 +364,16 @@ homeName?: string;
  * const device3Object = device3.toObject();
  * ```
  */
-export type Device3 = {
+@Schema()
+export class Device3 extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop({"type":Device3HomeSchema})
 home?: Device3Home;
 }
+
+export const Device3Schema = SchemaFactory.createForClass(Device3);
 
 /**
  * Lean version of Device3Document (type alias of `Device3`)
@@ -429,10 +467,15 @@ home?: Device3HomeDocument;
  * const device4Object = device4.toObject();
  * ```
  */
-export type Device4Home = {
+@Schema({"_id":false})
+export class Device4Home extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const Device4HomeSchema = SchemaFactory.createForClass(Device4Home);
 
 /**
  * Lean version of Device4Document
@@ -442,11 +485,16 @@ homeName?: string;
  * const device4Object = device4.toObject();
  * ```
  */
-export type Device4 = {
+@Schema()
+export class Device4 extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop({"type":Device4HomeSchema})
 home?: Device4Home;
 }
+
+export const Device4Schema = SchemaFactory.createForClass(Device4);
 
 /**
  * Lean version of Device4Document (type alias of `Device4`)
@@ -540,10 +588,15 @@ home?: Device4HomeDocument;
  * const devicedefaultObject = devicedefault.toObject();
  * ```
  */
-export type DeviceDefaultHome = {
+@Schema({"_id":false})
+export class DeviceDefaultHome extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 homeId?: string;
+@Prop({"type":String})
 homeName?: string;
 }
+
+export const DeviceDefaultHomeSchema = SchemaFactory.createForClass(DeviceDefaultHome);
 
 /**
  * Lean version of DeviceDefaultDocument
@@ -553,11 +606,16 @@ homeName?: string;
  * const devicedefaultObject = devicedefault.toObject();
  * ```
  */
-export type DeviceDefault = {
+@Schema()
+export class DeviceDefault extends mongoose.Types.Document {
+@Prop({"type":String})
 name?: string;
 _id: mongoose.Types.ObjectId;
+@Prop({"type":DeviceDefaultHomeSchema})
 home?: DeviceDefaultHome;
 }
+
+export const DeviceDefaultSchema = SchemaFactory.createForClass(DeviceDefault);
 
 /**
  * Lean version of DeviceDefaultDocument (type alias of `DeviceDefault`)

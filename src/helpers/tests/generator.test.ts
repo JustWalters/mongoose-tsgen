@@ -18,7 +18,7 @@ function cleanupModelsInMemory() {
 
 // these tests are more integration tests than unit - should split them out
 
-describe("generateTypes", () => {
+describe.only("generateTypes", () => {
   beforeAll(cleanup);
 
   afterEach(cleanup);
@@ -41,7 +41,9 @@ describe("generateTypes", () => {
     generator.overloadQueryPopulate(sourceFile);
 
     cleanupTs?.();
-    expect(sourceFile.getFullText().trim()).toBe(getExpectedString("user.gen.ts").trim());
+    expect(sourceFile.getFullText().trim().replace(/\n\s+/g, `\n `).replace(/\s+\n/, ` \n`)).toBe(
+      getExpectedString("user.gen.ts").trim().replace(/\n\s+/g, `\n `).replace(/\s+\n/, ` \n`)
+    );
   });
 
   // TODO: the next 2 tests are kinda random and out of place. First one covers all the latest changes
@@ -81,5 +83,28 @@ describe("generateTypes", () => {
 
     cleanupTs?.();
     expect(sourceFile.getFullText().trim()).toBe(getExpectedString("user2.gen.ts").trim());
+  });
+
+  test.only("heavily nested", async () => {
+    const modelsPaths = await paths.getModelsPaths("./src/helpers/tests/artifacts/report.ts");
+    const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");
+
+    const schemas = parser.loadSchemas(modelsPaths);
+
+    let sourceFile = generator.createSourceFile(genFilePath);
+    sourceFile = await generator.generateTypes({ schemas, sourceFile });
+
+    const modelTypes = tsReader.getModelTypes(modelsPaths);
+    generator.replaceModelTypes(sourceFile, modelTypes, schemas);
+    generator.addPopulateHelpers(sourceFile);
+    generator.overloadQueryPopulate(sourceFile);
+
+    fs.writeFileSync(
+      path.join(__dirname, "artifacts/report.gen-saved.ts"),
+      sourceFile.getFullText()
+    );
+
+    cleanupTs?.();
+    expect(sourceFile.getFullText().trim()).toBe(getExpectedString("report.gen.ts").trim());
   });
 });

@@ -6,6 +6,8 @@
 // NOTE: ANY CHANGES MADE WILL BE OVERWRITTEN ON SUBSEQUENT EXECUTIONS OF MONGOOSE-TSGEN.
 
 import mongoose from "mongoose";
+ import { Prop, Schema } from '@nestjs/mongoose';
+import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
 
 /**
  * Lean version of UserFriendDocument
@@ -15,11 +17,15 @@ import mongoose from "mongoose";
  * const userObject = user.toObject();
  * ```
  */
-export type UserFriend = {
+@Schema({"minimize":true,"typeKey":"type","strict":true})
+export class UserFriend extends mongoose.Types.Subdocument {
+@Prop({"required":true,"ref":"User","type":mongoose.Types.ObjectId})
 uid: User["_id"] | User;
+@Prop({"type":String})
 nickname?: string;
 _id: mongoose.Types.ObjectId;
 }
+ export const UserFriendSchema = SchemaFactory.createForClass(UserFriend);
 
 /**
  * Lean version of UserCitySubdocWithoutDefaultDocument
@@ -29,10 +35,13 @@ _id: mongoose.Types.ObjectId;
  * const userObject = user.toObject();
  * ```
  */
-export type UserCitySubdocWithoutDefault = {
+@Schema({"minimize":true,"typeKey":"type","strict":true})
+export class UserCitySubdocWithoutDefault extends mongoose.Types.Subdocument {
+@Prop({"type":String})
 a?: string;
 _id: mongoose.Types.ObjectId;
 }
+ export const UserCitySubdocWithoutDefaultSchema = SchemaFactory.createForClass(UserCitySubdocWithoutDefault);
 
 /**
  * Lean version of UserDocument
@@ -42,48 +51,80 @@ _id: mongoose.Types.ObjectId;
  * const userObject = user.toObject();
  * ```
  */
-export type User = {
+@Schema({"toObject":{"virtuals":true}})
+export class User extends mongoose.Types.Document {
+@Prop({"required":true,"type":String})
 email: string;
+@Prop({"required":true,"type":String})
 firstName: string;
 /** inline jsdoc */
+ @Prop({"required":true,"type":String})
 lastName: string;
 /**
  * single line jsdoc
  */
+ @Prop({"type":mongoose.Schema.Types.Mixed})
 metadata?: any;
+@Prop({"ref":"User","type":mongoose.Types.ObjectId})
 bestFriend?: User["_id"] | User;
 /**
  * multiline
  * jsdoc
  */
-friends: UserFriend[];
+ @Prop({"type":[UserFriendSchema],"required":true})
+friends: mongoose.Types.DocumentArray<UserFriend>;
+@Prop({"type":"{\ncoordinates: Number[];\nsubdocWithoutDefault?: UserCitySubdocWithoutDefault[];\n}","required":true})
 city: {
 coordinates: number[];
 subdocWithoutDefault?: UserCitySubdocWithoutDefault[];
 };
+@Prop({"type":[String],"required":true})
 tags: string[];
+@Prop({"type":mongoose.Types.ObjectId})
 alternateObjectId?: mongoose.Types.ObjectId;
+@Prop({"type":mongoose.Types.Map<String>})
 socialMediaHandles?: Map<string, string>;
+@Prop({"type":[mongoose.Types.Map<Number>],"required":true})
 arrayOfMaps: (Map<string, number>)[];
+@Prop({"type":mongoose.Types.Map<[Number]>})
 mapOfArrays?: Map<string, number[]>;
+@Prop({"required":function (this: UserDocument) {
+  // This is irrelevant, we're just testing that setting `required: function() {...}` leaves the field "optional" in the generated typescript.
+  return !!this.alternateObjectId
+ },"type":Number})
 requiredIsFunction?: number;
+@Prop({"required":true,"type":Buffer})
 buffer: Buffer;
+@Prop({"type":Buffer})
 bufferString?: Buffer;
+@Prop({"default":null,"type":Buffer})
 bufferSchemaType?: Buffer;
+@Prop({"type":Number})
 decimal128?: number;
+@Prop({"type":Number})
 otherDecimal128?: number;
+@Prop({"type":Number})
 numberString?: number;
+@Prop({"type":String})
 stringString?: string;
+@Prop({"type":Boolean})
 booleanString?: boolean;
+@Prop({"type":Date})
 dateString?: Date;
+@Prop({"required":true,"type":Number})
 otherNumberString: number;
+@Prop({"required":true,"type":String})
 otherStringString: string;
+@Prop({"type":String,"enum":["a", "b", "c", null]})
 enumWithNull?: "a" | "b" | "c" | null;
+@Prop({"type":String,"enum":["a", "b", "c"]})
 enumWithoutNull?: "a" | "b" | "c";
 "special-character"?: string;
 _id: mongoose.Types.ObjectId;
-name: string;
+ name: string;
 }
+
+export const UserSchema = SchemaFactory.createForClass(User);
 
 /**
  * Lean version of UserDocument (type alias of `User`)
