@@ -94,7 +94,6 @@ class MongooseTsgen extends Command {
 
     const schemas = parser.loadSchemasFromSchemaFiles([schemaPath]);
 
-    // console.log("SCHEMAS", schemaPath, Object.keys(schemas));
     let sourceFile = generator.createSourceFile(genFilePath);
 
     const noMongoose = flags["no-mongoose"];
@@ -108,7 +107,7 @@ class MongooseTsgen extends Command {
 
     const schemaTypes = tsReader.getSchemaTypes([schemaPath]);
     console.log("STYPES", schemaTypes);
-    generator.replaceModelTypes(sourceFile, schemaTypes, schemas);
+    generator.replaceModelTypes(sourceFile, schemaTypes, schemas, true);
 
     this.log(`Writing interfaces to ${genFilePath}`);
 

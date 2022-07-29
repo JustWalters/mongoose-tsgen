@@ -81,6 +81,7 @@ const ReportSchema = new Schema({
     plainFile: FileReferenceSchema,
   }),
   namedReference: { type: NamedReferenceSchema, },
+  possibleNames: { type: String, enum: Object.values(NAMES), default: NAMES.WAYNE },
   plainObject: {
     showRETaxes: Boolean,
   },
@@ -98,4 +99,4 @@ ReportSchema.virtual('nameIsWayne')
 
 export const Report = mongoose.model('Report', ReportSchema);
 
-export default Report;
+export default ReportSchema;

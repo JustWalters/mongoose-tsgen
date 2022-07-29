@@ -152,7 +152,7 @@ function getVirtualGetter(callExpr: CallExpression): FunctionExpression | undefi
   return funcExpr;
 }
 
-function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes, backupSchemaName: string = '') {
+function findPropertiesInFile(sourceFile: SourceFile, modelTypes: ModelTypes, backupSchemaName = '') {
   const schemaModelMapping: {
     [schemaVariableName: string]: string;
   } = {};
@@ -303,7 +303,14 @@ function findTypesInFile(sourceFile: SourceFile, modelTypes: ModelTypes) {
             console.log("tsreader: Found virtual on schema: " + schemaVariableName);
         } else continue;
 
-        const modelName = schemaModelMapping[schemaVariableName];
+        const modelName = (() => {
+          const localModelName = schemaModelMapping[schemaVariableName];
+          if (localModelName) return localModelName;
+
+          const alternateSchemaVariableName = schemaVariableName.replace(/Schema$/, "");
+          return schemaModelMapping[alternateSchemaVariableName];
+        })();
+
         if (!modelName) {
           if (process.env.DEBUG)
             console.warn(
@@ -406,15 +413,15 @@ const parseSchemaInitializer = (d: VariableDeclaration | ExportAssignment, fileP
   let exprStr = "";
 
   const callExpr = d.getFirstChildByKind(SyntaxKind.CallExpression);
-  if (!callExpr) {
+  if (callExpr) {
+    const callExprStr = callExpr.getText().replace(/[\r\n\t ]/g, "");
+    exprStr = callExprStr;
+  } else {
     exprStr =
       d
         .getFirstChildByKind(SyntaxKind.NewExpression)
         ?.getText()
         .replace(/[\r\n\t ]/g, "") || "";
-  } else {
-    const callExprStr = callExpr.getText().replace(/[\r\n\t ]/g, "");
-    exprStr = callExprStr;
   }
 
   const pattern = /Schema\(/;
@@ -428,7 +435,7 @@ const parseSchemaInitializer = (d: VariableDeclaration | ExportAssignment, fileP
     return undefined;
   }
 
-  const [, fileName] = filePath.match(/\/([A-Za-z0-9_-]+).schema.js/) || [];
+  const [, fileName] = filePath.match(/\/([A-Za-z0-9_-]+).schema.[jt]s/) || [];
   if (fileName) {
     const schemaVariableName = pascalCase(fileName);
     return { schemaVariableName, modelName: schemaVariableName };
@@ -451,7 +458,7 @@ function getSchemaNaming(sourceFile: SourceFile, filePath: string): { modelName:
 
     const modelVariableName = d.getName();
     return { modelName, modelVariableName, schemaVariableName };
-  };
+  }
 
   const defaultExportAssignment = sourceFile.getExportAssignment(d => !d.isExportEquals());
   if (defaultExportAssignment) {
@@ -472,7 +479,7 @@ function getSchemaNaming(sourceFile: SourceFile, filePath: string): { modelName:
   }
 
   return null;
-};
+}
 
 function initModelTypes(sourceFile: SourceFile, filePath: string) {
   if (process.env.DEBUG) console.log("tsreader: Searching file for Mongoose schemas: " + filePath);
@@ -602,7 +609,7 @@ export const getSchemaTypes = (schemasPaths: string[], maxCommentDepth = 2): Mod
 
   // TODO: ideally we only parse the files that we know have methods, statics, or virtuals.
   // Would save a lot of time
-  schemasPaths.forEach((schemaPath) => {
+  schemasPaths.forEach(schemaPath => {
     const sourceFile = project.getSourceFileOrThrow(schemaPath);
     let modelTypes = initSchemaTypes(sourceFile, schemaPath);
 

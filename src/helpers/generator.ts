@@ -26,7 +26,8 @@ export const replaceModelTypes = (
   modelTypes: ModelTypes,
   schemas: {
     [modelName: string]: mongoose.Schema;
-  }
+  },
+  isSchemaMigration = false
 ) => {
   Object.entries(modelTypes).forEach(([modelName, types]) => {
     const { properties, methods, statics, query, virtuals, comments } = types;
@@ -74,6 +75,10 @@ export const replaceModelTypes = (
               ) {
                 const propertyName = property.getName().slice(1, -1);
                 const sourceValue = properties[prop.getName()];
+                if (propertyName === 'type') {
+                  // This needs special handling
+                  return
+                }
 
                 if (Node.isObjectLiteralExpression(sourceValue)) {
                   sourceValue.getProperties().forEach(propertyAttribute => {
@@ -142,7 +147,7 @@ export const replaceModelTypes = (
     // virtuals
     const virtualNames = Object.keys(virtuals);
     if (virtualNames && virtualNames.length > 0) {
-      const theClass = sourceFile?.getClass(modelName);
+      const theClass = sourceFile?.getClass(modelName) || sourceFile?.getClass(`${modelName}Schema`);
       const documentProperties = sourceFile
         ?.getTypeAlias(`${modelName}Document`)
         ?.getFirstChildByKind(SyntaxKind.IntersectionType)
@@ -151,7 +156,7 @@ export const replaceModelTypes = (
 
       // TODO: JW - This isn't quite right. Should be PropertyDeclaration[] | PropertySignature[]. But then .find is a problem. IDKY
       const leanProperties: false | undefined | (PropertyDeclaration | PropertySignature)[] =
-        parser.getShouldLeanIncludeVirtuals(schemas[modelName]) &&
+        (parser.getShouldLeanIncludeVirtuals(schemas[modelName]) || isSchemaMigration) &&
         (sourceFile
           ?.getTypeAlias(`${modelName}`)
           ?.getFirstChildByKind(SyntaxKind.TypeLiteral)
@@ -172,37 +177,6 @@ export const replaceModelTypes = (
                 );
                 if (virtuals[virtualName].returnType)
                   docPropMatch?.setType(virtuals[virtualName].returnType);
-
-                if (virtuals[virtualName].getter)
-                  theClass?.addGetAccessor({
-                    kind: StructureKind.GetAccessor,
-                    name: `"${virtualName}"`,
-                    returnType: virtuals[virtualName].returnType,
-                    // JustinTODO: Would it be better to map it to StatementStructures somehow?
-                    statements: (virtuals[virtualName].getter?.getStatements() || []).map(s =>
-                      s.getText()
-                    )
-                  });
-
-                if (virtuals[virtualName].setter)
-                  theClass?.addSetAccessor({
-                    kind: StructureKind.SetAccessor,
-                    name: `"${virtualName}"`,
-                    parameters: [
-                      {
-                        kind: StructureKind.Parameter,
-                        name: virtuals[virtualName].setter?.getParameters()[0]?.getName() || "",
-                        type:
-                          virtuals[virtualName].setter
-                            ?.getParameters()[0]
-                            ?.getType()
-                            .getText(virtuals[virtualName].setter?.getParameters()[0]) || ""
-                      }
-                    ],
-                    statements: virtuals[virtualName].setter
-                      ?.getStatementsWithComments()
-                      .map(s => s.getText())
-                  });
               }
               if (leanProperties) {
                 const leanPropMatch = (nestedLeanProps ?? leanProperties).find(
@@ -211,6 +185,7 @@ export const replaceModelTypes = (
 
                 if (virtuals[virtualName].returnType)
                   leanPropMatch?.setType(virtuals[virtualName].returnType);
+
                 if (leanPropMatch?.getKind() === SyntaxKind.PropertyDeclaration) {
                   const propertyDeclaration = leanPropMatch as PropertyDeclaration;
                   propertyDeclaration.getDecorators().forEach(decorator => {
@@ -218,6 +193,37 @@ export const replaceModelTypes = (
                   });
                 }
               }
+
+              if (virtuals[virtualName].getter)
+                theClass?.addGetAccessor({
+                  kind: StructureKind.GetAccessor,
+                  name: `"${virtualName}"`,
+                  returnType: virtuals[virtualName].returnType,
+                  // JustinTODO: Would it be better to map it to StatementStructures somehow?
+                  statements: (virtuals[virtualName].getter?.getStatements() || []).map(s =>
+                    s.getText()
+                  )
+                });
+
+              if (virtuals[virtualName].setter)
+                theClass?.addSetAccessor({
+                  kind: StructureKind.SetAccessor,
+                  name: `"${virtualName}"`,
+                  parameters: [
+                    {
+                      kind: StructureKind.Parameter,
+                      name: virtuals[virtualName].setter?.getParameters()[0]?.getName() || "",
+                      type:
+                        virtuals[virtualName].setter
+                          ?.getParameters()[0]
+                          ?.getType()
+                          .getText(virtuals[virtualName].setter?.getParameters()[0]) || ""
+                    }
+                  ],
+                  statements: virtuals[virtualName].setter
+                    ?.getStatementsWithComments()
+                    .map(s => s.getText())
+                });
 
               return;
             }
@@ -399,7 +405,6 @@ export const generateTypes = ({
         noMongoose,
         shouldLeanIncludeVirtuals,
         shouldIncludeDecorators,
-        skipChildSchemas: topLevelOnly,
       });
 
       writer.write(leanInterfaceStr).blankLine();

@@ -402,6 +402,10 @@ const formatPropDecorator = ({
 }): string => {
   if (!nestDecorators) return "";
 
+  if (valType === MIGRATE_THIS_VIRTUAL_MANUALLY) {
+    return "";
+  }
+
   if (key === "_id" && options?.auto) {
     return "";
   }
@@ -536,8 +540,9 @@ export const getParseKeyFn = (
       // if not lean doc and lean docs shouldnt include virtuals, ignore entry
       if (!isDocument && !shouldLeanIncludeVirtuals) return "";
 
-      // We add proper virtuals for models already
-      if (fromModel && !isDocument) return ""
+      // Justin: The below should be uncommented once I figure out a better way to skip it for schema migrations.
+      // // We add proper virtuals for models already
+      // if (fromModel && !isDocument) return ""
 
       valType = MIGRATE_THIS_VIRTUAL_MANUALLY;
       isOptional = false;
@@ -647,7 +652,6 @@ export const parseSchema = ({
   noMongoose = false,
   shouldLeanIncludeVirtuals,
   shouldIncludeDecorators = false,
-  skipChildSchemas = false,
 }: {
   schema: any;
   modelName?: string;
@@ -657,7 +661,6 @@ export const parseSchema = ({
   noMongoose?: boolean;
   shouldLeanIncludeVirtuals: boolean;
   shouldIncludeDecorators?: boolean;
-  skipChildSchemas?: boolean;
 }) => {
   let template = "";
   const schema = _.cloneDeep(schemaOriginal);
@@ -781,7 +784,7 @@ export const loadSchemasFromSchemaFiles = (schemasPaths: string[]) => {
   };
 
   schemasPaths.forEach((singleSchemaPath: string) => {
-    if (singleSchemaPath.includes('report.schema')) return;
+    // if (singleSchemaPath.includes('report.schema')) return;
     let exportedData;
     try {
       exportedData = require(singleSchemaPath);
@@ -796,13 +799,11 @@ export const loadSchemasFromSchemaFiles = (schemasPaths: string[]) => {
     // iterate through each exported property, check if val is a schema and add to schemas if so
     for (const [key, obj] of Object.entries(exportedData)) {
       if (key === 'default') {
-        let [,schemaName] = singleSchemaPath.match(/\/([A-Za-z0-9_-]+).schema.js/) || [];
+        const [, schemaName] = singleSchemaPath.match(/\/([A-Za-z0-9_-]+).schema.ts/) || [];
         if (schemaName) {
           registerSchema(schemaName, obj);
-        } else {
-          if (process.env.DEBUG)
+        } else if (process.env.DEBUG)
             console.warn(`Could not find a schema name for default export in ${singleSchemaPath}`);
-        }
       } else {
         registerSchema(key, obj);
       }
