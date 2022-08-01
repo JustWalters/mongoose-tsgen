@@ -85,14 +85,21 @@ describe.only("generateTypes", () => {
     expect(sourceFile.getFullText().trim()).toBe(getExpectedString("user2.gen.ts").trim());
   });
 
-  test.only("heavily nested, schema only", async () => {
-    const schemasPaths = await paths.getSchemasPaths("./src/helpers/tests/artifacts/report.schema.ts");
+  test("heavily nested, schema only", async () => {
+    const schemasPaths = await paths.getSchemasPaths(
+      "./src/helpers/tests/artifacts/report.schema.ts"
+    );
     const cleanupTs = tsReader.registerUserTs("tsconfig.test.json");
 
     const schemas = parser.loadSchemasFromSchemaFiles(schemasPaths);
 
     let sourceFile = generator.createSourceFile(genFilePath);
-    sourceFile = await generator.generateTypes({ schemas, sourceFile, noMongoose: false, topLevelOnly: true });
+    sourceFile = await generator.generateTypes({
+      schemas,
+      sourceFile,
+      noMongoose: false,
+      topLevelOnly: true
+    });
 
     const schemaTypes = tsReader.getSchemaTypes(schemasPaths);
     generator.replaceModelTypes(sourceFile, schemaTypes, schemas, true);

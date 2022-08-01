@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { User2Document, User2Model, User2Schema } from './user2.gen';
+import { User2Document, User2Model/*, User2Schema*/ } from './user2.gen';
 
 const addressSchema = new mongoose.Schema(
   {
@@ -11,7 +11,7 @@ const addressSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const User2Schema: User2Schema = new mongoose.Schema(
+const User2Schema/*: User2Schema*/ = new mongoose.Schema(
   {
     _id: {
       type: Number,

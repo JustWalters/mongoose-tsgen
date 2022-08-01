@@ -1,7 +1,7 @@
 import mongoose, { Schema, model } from 'mongoose';
-import { DeviceDocument, DeviceModel, HomeDocument, HomeModel, HomeSchema, DeviceSchema } from './device.gen';
+import { DeviceDocument, DeviceModel, HomeDocument, HomeModel/*, HomeSchema, DeviceSchema*/ } from './device.gen';
 
-const homeSchema: HomeSchema = new Schema(
+const homeSchema/*: HomeSchema*/ = new Schema(
   {
     homeId: String,
     homeName: String,
@@ -18,7 +18,7 @@ homeSchema.virtual("status")
 
 export const home = mongoose.model<HomeDocument, HomeModel>('Home', homeSchema);
 
-const DeviceSchema: DeviceSchema = new Schema({
+const DeviceSchema/*: DeviceSchema*/ = new Schema({
   name: String,
   home: home.schema,
 });

@@ -1,8 +1,8 @@
 import mongoose, { Schema } from 'mongoose';
-import { UserDocument, UserModel, UserSchema, UserQueries, UserObject } from "./user.gen";
+import { UserDocument, UserModel, /* UserSchema, */ UserQueries, UserObject } from "./user.gen";
 
 // UserSchema type
-const UserSchema: UserSchema = new Schema({
+const UserSchema/*: UserSchema */ = new Schema({
   email: {
     type: String,
     required: true

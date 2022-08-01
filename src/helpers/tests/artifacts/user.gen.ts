@@ -21,7 +21,7 @@ import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
 export class UserFriend extends mongoose.Types.Subdocument {
 @Prop({"required":true,"ref":"User","type":mongoose.Types.ObjectId})
 uid: User["_id"] | User;
-@Prop({"type":String})
+@Prop()
 nickname?: string;
 _id: mongoose.Types.ObjectId;
 }
@@ -37,7 +37,7 @@ _id: mongoose.Types.ObjectId;
  */
 @Schema({"minimize":true,"typeKey":"type","strict":true})
 export class UserCitySubdocWithoutDefault extends mongoose.Types.Subdocument {
-@Prop({"type":String})
+@Prop()
 a?: string;
 _id: mongoose.Types.ObjectId;
 }
@@ -53,12 +53,12 @@ _id: mongoose.Types.ObjectId;
  */
 @Schema({"toObject":{"virtuals":true}})
 export class User extends mongoose.Types.Document {
-@Prop({"required":true,"type":String})
+@Prop({"required":true})
 email: string;
-@Prop({"required":true,"type":String})
+@Prop({"required":true})
 firstName: string;
 /** inline jsdoc */
- @Prop({"required":true,"type":String})
+ @Prop({"required":true})
 lastName: string;
 /**
  * single line jsdoc
@@ -80,7 +80,7 @@ subdocWithoutDefault?: UserCitySubdocWithoutDefault[];
 };
 @Prop({"type":[String],"required":true})
 tags: string[];
-@Prop({"type":mongoose.Types.ObjectId})
+@Prop()
 alternateObjectId?: mongoose.Types.ObjectId;
 @Prop({"type":mongoose.Types.Map<String>})
 socialMediaHandles?: Map<string, string>;
@@ -91,7 +91,7 @@ mapOfArrays?: Map<string, number[]>;
 @Prop({"required":function (this: UserDocument) {
   // This is irrelevant, we're just testing that setting `required: function() {...}` leaves the field "optional" in the generated typescript.
   return !!this.alternateObjectId
- },"type":Number})
+ }})
 requiredIsFunction?: number;
 @Prop({"required":true,"type":Buffer})
 buffer: Buffer;
@@ -99,159 +99,33 @@ buffer: Buffer;
 bufferString?: Buffer;
 @Prop({"default":null,"type":Buffer})
 bufferSchemaType?: Buffer;
-@Prop({"type":Number})
+@Prop()
 decimal128?: number;
-@Prop({"type":Number})
+@Prop()
 otherDecimal128?: number;
-@Prop({"type":Number})
+@Prop()
 numberString?: number;
-@Prop({"type":String})
+@Prop()
 stringString?: string;
-@Prop({"type":Boolean})
+@Prop()
 booleanString?: boolean;
-@Prop({"type":Date})
+@Prop()
 dateString?: Date;
-@Prop({"required":true,"type":Number})
+@Prop({"required":true})
 otherNumberString: number;
-@Prop({"required":true,"type":String})
+@Prop({"required":true})
 otherStringString: string;
-@Prop({"type":String,"enum":["a", "b", "c", null]})
-enumWithNull?: "a" | "b" | "c" | null;
-@Prop({"type":String,"enum":["a", "b", "c"]})
-enumWithoutNull?: "a" | "b" | "c";
+@Prop({"enum":["a", "b", "c", null]})
+enumWithNull?: string;
+@Prop({"enum":["a", "b", "c"]})
+enumWithoutNull?: string;
 _id: mongoose.Types.ObjectId;
- name: string;
+ get "name"(): string {
+  return `${this.firstName} ${this.lastName}`;
+ }
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-/**
- * Lean version of UserDocument (type alias of `User`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { User } from "../models"
- * import { UserObject } from "../interfaces/mongoose.gen.ts"
- * 
- * const userObject: UserObject = user.toObject();
- * ```
- */
-export type UserObject = User
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type UserQuery = mongoose.Query<any, UserDocument, UserQueries> & UserQueries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `UserSchema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type UserQueries = {
-populateFriends: (this: UserQuery) => UserQuery;
-}
-
-export type UserMethods = {
-isMetadataString: (this: UserDocument) => boolean;
-}
-
-export type UserStatics = {
-getFriends: (this: UserModel, friendUids: UserDocument["_id"][]) => Promise<UserObject[]>;
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const User = mongoose.model<UserDocument, UserModel>("User", UserSchema);
- * ```
- */
-export type UserModel = mongoose.Model<UserDocument, UserQueries> & UserStatics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new User schema instances:
- * ```
- * const UserSchema: UserSchema = new mongoose.Schema({ ... })
- * ```
- */
-export type UserSchema = mongoose.Schema<UserDocument, UserModel, UserMethods, UserQueries>
-
-/**
- * Mongoose Subdocument type
- * 
- * Type of `UserDocument["friends"]` element.
- */
-export type UserFriendDocument = mongoose.Types.Subdocument & {
-uid: UserDocument["_id"] | UserDocument;
-nickname?: string;
-_id: mongoose.Types.ObjectId;
-}
-
-/**
- * Mongoose Subdocument type
- * 
- * Type of `UserDocument["city.subdocWithoutDefault"]` element.
- */
-export type UserCitySubdocWithoutDefaultDocument = mongoose.Types.Subdocument & {
-a?: string;
-_id: mongoose.Types.ObjectId;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const User = mongoose.model<UserDocument, UserModel>("User", UserSchema);
- * ```
- */
-export type UserDocument = mongoose.Document<mongoose.Types.ObjectId, UserQueries> & UserMethods & {
-email: string;
-firstName: string;
-/** inline jsdoc */
-lastName: string;
-/**
- * single line jsdoc
- */
-metadata?: any;
-bestFriend?: UserDocument["_id"] | UserDocument;
-/**
- * multiline
- * jsdoc
- */
-friends: mongoose.Types.DocumentArray<UserFriendDocument>;
-city: {
-coordinates: mongoose.Types.Array<number>;
-subdocWithoutDefault?: mongoose.Types.DocumentArray<UserCitySubdocWithoutDefaultDocument>;
-};
-tags: mongoose.Types.Array<string>;
-alternateObjectId?: mongoose.Types.ObjectId;
-socialMediaHandles?: mongoose.Types.Map<string>;
-arrayOfMaps: mongoose.Types.Array<mongoose.Types.Map<number>>;
-mapOfArrays?: mongoose.Types.Map<mongoose.Types.Array<number>>;
-requiredIsFunction?: number;
-buffer: mongoose.Types.Buffer;
-bufferString?: mongoose.Types.Buffer;
-bufferSchemaType?: mongoose.Types.Buffer;
-decimal128?: mongoose.Types.Decimal128;
-otherDecimal128?: mongoose.Types.Decimal128;
-numberString?: number;
-stringString?: string;
-booleanString?: boolean;
-dateString?: Date;
-otherNumberString: number;
-otherStringString: string;
-enumWithNull?: "a" | "b" | "c" | null;
-enumWithoutNull?: "a" | "b" | "c";
-_id: mongoose.Types.ObjectId;
-name: string;
-}
 
 /**
  * Check if a property on a document is populated:

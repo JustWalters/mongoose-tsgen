@@ -20,81 +20,15 @@ import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
  */
 @Schema({"_id":false})
 export class Home extends mongoose.Types.Document {
-@Prop({"type":String})
+@Prop()
 homeId?: string;
-@Prop({"type":String})
+@Prop()
 homeName?: string;
+status: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const HomeSchema = SchemaFactory.createForClass(Home);
 
-/**
- * Lean version of HomeDocument (type alias of `Home`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { Home } from "../models"
- * import { HomeObject } from "../interfaces/mongoose.gen.ts"
- * 
- * const homeObject: HomeObject = home.toObject();
- * ```
- */
-export type HomeObject = Home
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type HomeQuery = mongoose.Query<any, HomeDocument, HomeQueries> & HomeQueries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `HomeSchema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type HomeQueries = {
-}
-
-export type HomeMethods = {
-}
-
-export type HomeStatics = {
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Home = mongoose.model<HomeDocument, HomeModel>("Home", HomeSchema);
- * ```
- */
-export type HomeModel = mongoose.Model<HomeDocument, HomeQueries> & HomeStatics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new Home schema instances:
- * ```
- * const HomeSchema: HomeSchema = new mongoose.Schema({ ... })
- * ```
- */
-export type HomeSchema = mongoose.Schema<HomeDocument, HomeModel, HomeMethods, HomeQueries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Home = mongoose.model<HomeDocument, HomeModel>("Home", HomeSchema);
- * ```
- */
-export type HomeDocument = mongoose.Document<never, HomeQueries> & HomeMethods & {
-homeId?: string;
-homeName?: string;
-status: string;
-}
 
 /**
  * Lean version of DeviceHomeDocument
@@ -106,10 +40,11 @@ status: string;
  */
 @Schema({"_id":false})
 export class DeviceHome extends mongoose.Types.Subdocument {
-@Prop({"type":String})
+@Prop()
 homeId?: string;
-@Prop({"type":String})
+@Prop()
 homeName?: string;
+status: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const DeviceHomeSchema = SchemaFactory.createForClass(DeviceHome);
@@ -124,7 +59,7 @@ export const DeviceHomeSchema = SchemaFactory.createForClass(DeviceHome);
  */
 @Schema()
 export class Device extends mongoose.Types.Document {
-@Prop({"type":String})
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
 @Prop({"type":DeviceHomeSchema})
@@ -133,89 +68,6 @@ home?: DeviceHome;
 
 export const DeviceSchema = SchemaFactory.createForClass(Device);
 
-/**
- * Lean version of DeviceDocument (type alias of `Device`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { Device } from "../models"
- * import { DeviceObject } from "../interfaces/mongoose.gen.ts"
- * 
- * const deviceObject: DeviceObject = device.toObject();
- * ```
- */
-export type DeviceObject = Device
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type DeviceQuery = mongoose.Query<any, DeviceDocument, DeviceQueries> & DeviceQueries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `DeviceSchema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type DeviceQueries = {
-}
-
-export type DeviceMethods = {
-test: (this: DeviceDocument, ...args: any[]) => any;
-}
-
-export type DeviceStatics = {
-test: (this: DeviceModel, ...args: any[]) => any;
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device = mongoose.model<DeviceDocument, DeviceModel>("Device", DeviceSchema);
- * ```
- */
-export type DeviceModel = mongoose.Model<DeviceDocument, DeviceQueries> & DeviceStatics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new Device schema instances:
- * ```
- * const DeviceSchema: DeviceSchema = new mongoose.Schema({ ... })
- * ```
- */
-export type DeviceSchema = mongoose.Schema<DeviceDocument, DeviceModel, DeviceMethods, DeviceQueries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device = mongoose.model<DeviceDocument, DeviceModel>("Device", DeviceSchema);
- * ```
- */
-export type DeviceHomeDocument = mongoose.Document<mongoose.Types.ObjectId> & {
-homeId?: string;
-homeName?: string;
-status: any;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device = mongoose.model<DeviceDocument, DeviceModel>("Device", DeviceSchema);
- * ```
- */
-export type DeviceDocument = mongoose.Document<mongoose.Types.ObjectId, DeviceQueries> & DeviceMethods & {
-name?: string;
-_id: mongoose.Types.ObjectId;
-home?: DeviceHomeDocument;
-}
 
 /**
  * Lean version of Device2HomeDocument
@@ -227,10 +79,11 @@ home?: DeviceHomeDocument;
  */
 @Schema({"_id":false})
 export class Device2Home extends mongoose.Types.Subdocument {
-@Prop({"type":String})
+@Prop()
 homeId?: string;
-@Prop({"type":String})
+@Prop()
 homeName?: string;
+status: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const Device2HomeSchema = SchemaFactory.createForClass(Device2Home);
@@ -245,7 +98,7 @@ export const Device2HomeSchema = SchemaFactory.createForClass(Device2Home);
  */
 @Schema()
 export class Device2 extends mongoose.Types.Document {
-@Prop({"type":String})
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
 @Prop({"type":Device2HomeSchema})
@@ -254,89 +107,6 @@ home?: Device2Home;
 
 export const Device2Schema = SchemaFactory.createForClass(Device2);
 
-/**
- * Lean version of Device2Document (type alias of `Device2`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { Device2 } from "../models"
- * import { Device2Object } from "../interfaces/mongoose.gen.ts"
- * 
- * const device2Object: Device2Object = device2.toObject();
- * ```
- */
-export type Device2Object = Device2
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type Device2Query = mongoose.Query<any, Device2Document, Device2Queries> & Device2Queries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `Device2Schema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type Device2Queries = {
-}
-
-export type Device2Methods = {
-test: (this: Device2Document, ...args: any[]) => any;
-}
-
-export type Device2Statics = {
-test: (this: Device2Model, ...args: any[]) => any;
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device2 = mongoose.model<Device2Document, Device2Model>("Device2", Device2Schema);
- * ```
- */
-export type Device2Model = mongoose.Model<Device2Document, Device2Queries> & Device2Statics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new Device2 schema instances:
- * ```
- * const Device2Schema: Device2Schema = new mongoose.Schema({ ... })
- * ```
- */
-export type Device2Schema = mongoose.Schema<Device2Document, Device2Model, Device2Methods, Device2Queries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device2 = mongoose.model<Device2Document, Device2Model>("Device2", Device2Schema);
- * ```
- */
-export type Device2HomeDocument = mongoose.Document<mongoose.Types.ObjectId> & {
-homeId?: string;
-homeName?: string;
-status: any;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device2 = mongoose.model<Device2Document, Device2Model>("Device2", Device2Schema);
- * ```
- */
-export type Device2Document = mongoose.Document<mongoose.Types.ObjectId, Device2Queries> & Device2Methods & {
-name?: string;
-_id: mongoose.Types.ObjectId;
-home?: Device2HomeDocument;
-}
 
 /**
  * Lean version of Device3HomeDocument
@@ -348,10 +118,11 @@ home?: Device2HomeDocument;
  */
 @Schema({"_id":false})
 export class Device3Home extends mongoose.Types.Subdocument {
-@Prop({"type":String})
+@Prop()
 homeId?: string;
-@Prop({"type":String})
+@Prop()
 homeName?: string;
+status: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const Device3HomeSchema = SchemaFactory.createForClass(Device3Home);
@@ -366,7 +137,7 @@ export const Device3HomeSchema = SchemaFactory.createForClass(Device3Home);
  */
 @Schema()
 export class Device3 extends mongoose.Types.Document {
-@Prop({"type":String})
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
 @Prop({"type":Device3HomeSchema})
@@ -375,89 +146,6 @@ home?: Device3Home;
 
 export const Device3Schema = SchemaFactory.createForClass(Device3);
 
-/**
- * Lean version of Device3Document (type alias of `Device3`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { Device3 } from "../models"
- * import { Device3Object } from "../interfaces/mongoose.gen.ts"
- * 
- * const device3Object: Device3Object = device3.toObject();
- * ```
- */
-export type Device3Object = Device3
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type Device3Query = mongoose.Query<any, Device3Document, Device3Queries> & Device3Queries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `Device3Schema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type Device3Queries = {
-}
-
-export type Device3Methods = {
-test: (this: Device3Document, ...args: any[]) => any;
-}
-
-export type Device3Statics = {
-test: (this: Device3Model, ...args: any[]) => any;
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device3 = mongoose.model<Device3Document, Device3Model>("Device3", Device3Schema);
- * ```
- */
-export type Device3Model = mongoose.Model<Device3Document, Device3Queries> & Device3Statics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new Device3 schema instances:
- * ```
- * const Device3Schema: Device3Schema = new mongoose.Schema({ ... })
- * ```
- */
-export type Device3Schema = mongoose.Schema<Device3Document, Device3Model, Device3Methods, Device3Queries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device3 = mongoose.model<Device3Document, Device3Model>("Device3", Device3Schema);
- * ```
- */
-export type Device3HomeDocument = mongoose.Document<mongoose.Types.ObjectId> & {
-homeId?: string;
-homeName?: string;
-status: any;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device3 = mongoose.model<Device3Document, Device3Model>("Device3", Device3Schema);
- * ```
- */
-export type Device3Document = mongoose.Document<mongoose.Types.ObjectId, Device3Queries> & Device3Methods & {
-name?: string;
-_id: mongoose.Types.ObjectId;
-home?: Device3HomeDocument;
-}
 
 /**
  * Lean version of Device4HomeDocument
@@ -469,10 +157,11 @@ home?: Device3HomeDocument;
  */
 @Schema({"_id":false})
 export class Device4Home extends mongoose.Types.Subdocument {
-@Prop({"type":String})
+@Prop()
 homeId?: string;
-@Prop({"type":String})
+@Prop()
 homeName?: string;
+status: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const Device4HomeSchema = SchemaFactory.createForClass(Device4Home);
@@ -487,7 +176,7 @@ export const Device4HomeSchema = SchemaFactory.createForClass(Device4Home);
  */
 @Schema()
 export class Device4 extends mongoose.Types.Document {
-@Prop({"type":String})
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
 @Prop({"type":Device4HomeSchema})
@@ -496,89 +185,6 @@ home?: Device4Home;
 
 export const Device4Schema = SchemaFactory.createForClass(Device4);
 
-/**
- * Lean version of Device4Document (type alias of `Device4`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { Device4 } from "../models"
- * import { Device4Object } from "../interfaces/mongoose.gen.ts"
- * 
- * const device4Object: Device4Object = device4.toObject();
- * ```
- */
-export type Device4Object = Device4
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type Device4Query = mongoose.Query<any, Device4Document, Device4Queries> & Device4Queries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `Device4Schema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type Device4Queries = {
-}
-
-export type Device4Methods = {
-test: (this: Device4Document, ...args: any[]) => any;
-}
-
-export type Device4Statics = {
-test: (this: Device4Model, ...args: any[]) => any;
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device4 = mongoose.model<Device4Document, Device4Model>("Device4", Device4Schema);
- * ```
- */
-export type Device4Model = mongoose.Model<Device4Document, Device4Queries> & Device4Statics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new Device4 schema instances:
- * ```
- * const Device4Schema: Device4Schema = new mongoose.Schema({ ... })
- * ```
- */
-export type Device4Schema = mongoose.Schema<Device4Document, Device4Model, Device4Methods, Device4Queries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device4 = mongoose.model<Device4Document, Device4Model>("Device4", Device4Schema);
- * ```
- */
-export type Device4HomeDocument = mongoose.Document<mongoose.Types.ObjectId> & {
-homeId?: string;
-homeName?: string;
-status: any;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const Device4 = mongoose.model<Device4Document, Device4Model>("Device4", Device4Schema);
- * ```
- */
-export type Device4Document = mongoose.Document<mongoose.Types.ObjectId, Device4Queries> & Device4Methods & {
-name?: string;
-_id: mongoose.Types.ObjectId;
-home?: Device4HomeDocument;
-}
 
 /**
  * Lean version of DeviceDefaultHomeDocument
@@ -590,10 +196,11 @@ home?: Device4HomeDocument;
  */
 @Schema({"_id":false})
 export class DeviceDefaultHome extends mongoose.Types.Subdocument {
-@Prop({"type":String})
+@Prop()
 homeId?: string;
-@Prop({"type":String})
+@Prop()
 homeName?: string;
+status: MIGRATE_THIS_VIRTUAL_MANUALLY;
 }
 
 export const DeviceDefaultHomeSchema = SchemaFactory.createForClass(DeviceDefaultHome);
@@ -608,7 +215,7 @@ export const DeviceDefaultHomeSchema = SchemaFactory.createForClass(DeviceDefaul
  */
 @Schema()
 export class DeviceDefault extends mongoose.Types.Document {
-@Prop({"type":String})
+@Prop()
 name?: string;
 _id: mongoose.Types.ObjectId;
 @Prop({"type":DeviceDefaultHomeSchema})
@@ -616,90 +223,6 @@ home?: DeviceDefaultHome;
 }
 
 export const DeviceDefaultSchema = SchemaFactory.createForClass(DeviceDefault);
-
-/**
- * Lean version of DeviceDefaultDocument (type alias of `DeviceDefault`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { DeviceDefault } from "../models"
- * import { DeviceDefaultObject } from "../interfaces/mongoose.gen.ts"
- * 
- * const devicedefaultObject: DeviceDefaultObject = devicedefault.toObject();
- * ```
- */
-export type DeviceDefaultObject = DeviceDefault
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type DeviceDefaultQuery = mongoose.Query<any, DeviceDefaultDocument, DeviceDefaultQueries> & DeviceDefaultQueries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `DeviceDefaultSchema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type DeviceDefaultQueries = {
-}
-
-export type DeviceDefaultMethods = {
-test: (this: DeviceDefaultDocument) => string;
-}
-
-export type DeviceDefaultStatics = {
-test: (this: DeviceDefaultModel) => string;
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const DeviceDefault = mongoose.model<DeviceDefaultDocument, DeviceDefaultModel>("DeviceDefault", DeviceDefaultSchema);
- * ```
- */
-export type DeviceDefaultModel = mongoose.Model<DeviceDefaultDocument, DeviceDefaultQueries> & DeviceDefaultStatics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new DeviceDefault schema instances:
- * ```
- * const DeviceDefaultSchema: DeviceDefaultSchema = new mongoose.Schema({ ... })
- * ```
- */
-export type DeviceDefaultSchema = mongoose.Schema<DeviceDefaultDocument, DeviceDefaultModel, DeviceDefaultMethods, DeviceDefaultQueries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const DeviceDefault = mongoose.model<DeviceDefaultDocument, DeviceDefaultModel>("DeviceDefault", DeviceDefaultSchema);
- * ```
- */
-export type DeviceDefaultHomeDocument = mongoose.Document<mongoose.Types.ObjectId> & {
-homeId?: string;
-homeName?: string;
-status: any;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const DeviceDefault = mongoose.model<DeviceDefaultDocument, DeviceDefaultModel>("DeviceDefault", DeviceDefaultSchema);
- * ```
- */
-export type DeviceDefaultDocument = mongoose.Document<mongoose.Types.ObjectId, DeviceDefaultQueries> & DeviceDefaultMethods & {
-name?: string;
-_id: mongoose.Types.ObjectId;
-home?: DeviceDefaultHomeDocument;
-}
 
 /**
  * Check if a property on a document is populated:

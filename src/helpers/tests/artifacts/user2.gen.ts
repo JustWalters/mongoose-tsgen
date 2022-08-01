@@ -20,7 +20,7 @@ import { SchemaFactory } from 'app/core/infrastructure/schema.factory';
  */
 @Schema({"_id":false})
 export class User2Address extends mongoose.Types.Subdocument {
-@Prop({"required":true,"type":String})
+@Prop({"required":true})
 city: string;
 }
 
@@ -36,100 +36,19 @@ export const User2AddressSchema = SchemaFactory.createForClass(User2Address);
  */
 @Schema({"timestamps":true})
 export class User2 extends mongoose.Types.Document {
+@Prop({"required":true})
 _id: number;
-@Prop({"type":Date})
+@Prop()
 lastOnlineAt?: Date;
-@Prop({"type":Date})
+@Prop()
 updatedAt?: Date;
-@Prop({"type":Date})
+@Prop()
 createdAt?: Date;
 @Prop({"required":true,"type":User2AddressSchema})
 address: User2Address;
 }
 
 export const User2Schema = SchemaFactory.createForClass(User2);
-
-/**
- * Lean version of User2Document (type alias of `User2`)
- * 
- * Use this type alias to avoid conflicts with model names:
- * ```
- * import { User2 } from "../models"
- * import { User2Object } from "../interfaces/mongoose.gen.ts"
- * 
- * const user2Object: User2Object = user2.toObject();
- * ```
- */
-export type User2Object = User2
-
-/**
- * Mongoose Query type
- * 
- * This type is returned from query functions. For most use cases, you should not need to use this type explicitly.
- */
-export type User2Query = mongoose.Query<any, User2Document, User2Queries> & User2Queries
-
-/**
- * Mongoose Query helper types
- * 
- * This type represents `User2Schema.query`. For most use cases, you should not need to use this type explicitly.
- */
-export type User2Queries = {
-}
-
-export type User2Methods = {
-}
-
-export type User2Statics = {
-}
-
-/**
- * Mongoose Model type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const User2 = mongoose.model<User2Document, User2Model>("User2", User2Schema);
- * ```
- */
-export type User2Model = mongoose.Model<User2Document, User2Queries> & User2Statics
-
-/**
- * Mongoose Schema type
- * 
- * Assign this type to new User2 schema instances:
- * ```
- * const User2Schema: User2Schema = new mongoose.Schema({ ... })
- * ```
- */
-export type User2Schema = mongoose.Schema<User2Document, User2Model, User2Methods, User2Queries>
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const User2 = mongoose.model<User2Document, User2Model>("User2", User2Schema);
- * ```
- */
-export type User2AddressDocument = mongoose.Document<number> & {
-city: string;
-}
-
-/**
- * Mongoose Document type
- * 
- * Pass this type to the Mongoose Model constructor:
- * ```
- * const User2 = mongoose.model<User2Document, User2Model>("User2", User2Schema);
- * ```
- */
-export type User2Document = mongoose.Document<number, User2Queries> & User2Methods & {
-_id: number;
-lastOnlineAt?: Date;
-updatedAt?: Date;
-createdAt?: Date;
-address: User2AddressDocument;
-}
 
 /**
  * Check if a property on a document is populated:
