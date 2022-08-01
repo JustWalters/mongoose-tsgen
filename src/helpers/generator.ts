@@ -194,7 +194,7 @@ export const replaceModelTypes = (
                 }
               }
 
-              if (virtuals[virtualName].getter)
+              if (virtuals[virtualName].getter) {
                 theClass?.addGetAccessor({
                   kind: StructureKind.GetAccessor,
                   name: `"${virtualName}"`,
@@ -202,8 +202,14 @@ export const replaceModelTypes = (
                   // JustinTODO: Would it be better to map it to StatementStructures somehow?
                   statements: (virtuals[virtualName].getter?.getStatements() || []).map(s =>
                     s.getText()
-                  )
-                });
+                    )
+                  });
+
+                  theClass
+                    ?.getChildrenOfKind(SyntaxKind.PropertyDeclaration)
+                    .find(prop => prop.getName() === virtualName)
+                    ?.remove();
+                }
 
               if (virtuals[virtualName].setter)
                 theClass?.addSetAccessor({

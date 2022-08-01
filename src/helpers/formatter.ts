@@ -34,7 +34,6 @@ export const format = async (filePaths: string[]) => {
   // await fixFiles(filePaths);
 };
 
-
 export const pascalCase = (str: string) => {
   return str.charAt(0).toUpperCase() + _.camelCase(str).slice(1);
 }

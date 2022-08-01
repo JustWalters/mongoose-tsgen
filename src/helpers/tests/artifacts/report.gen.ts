@@ -184,7 +184,6 @@ plainObject?: {
 showRETaxes?: boolean;
 };
 _id: mongoose.Types.ObjectId;
-nameIsWayne: boolean;
 @Prop({"type":ReportLetterOfEngagementSchema,"default":null})
 letterOfEngagement?: ReportLetterOfEngagement;
 @Prop({"type":[ReportProvidedDocumentSchema],"default":[],"required":true})

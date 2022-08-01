@@ -374,7 +374,7 @@ const formatPropOptions = (options: object) => {
           `${valType}Schema`;
         return `"type":[${subSchema}]`;
       })
-      .replace(/"type":"(.+ \| .+)"/g, (match, valType) => {
+      .replace(/"type":"(.+ \| .+)"/g, match => {
         const isAPopulatableField = match.includes('[\\"_id\\"]');
         if (isAPopulatableField) return '"type":mongoose.Types.ObjectId';
 
@@ -618,7 +618,7 @@ export const getParseKeyFn = (
     if (isArray) {
       if (isDocument)
         valType = `mongoose.Types.${val._isSubdocArray ? "Document" : ""}Array<` + valType + ">";
-      else if (val._isSubdocArray && includeDecorators) {
+      else if (val?._isSubdocArray && includeDecorators) {
         valType = `mongoose.Types.DocumentArray<${valType}>`;
       } else {
         // if valType includes a space, likely means its a union type (ie "number | string") so lets wrap it in brackets when adding the array to the type

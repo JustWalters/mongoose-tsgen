@@ -127,7 +127,7 @@ class MongooseTsgen extends Command {
       const genFilePath = paths.cleanOutputPath(flags.output);
       const genFileFolder = path.dirname(genFilePath);
      
-      await Promise.all(schemasPaths.map((schemaPath) => {
+      await Promise.all(schemasPaths.map(schemaPath => {
         return this.migrateSchema(genFileFolder, schemaPath);
       }));
 
